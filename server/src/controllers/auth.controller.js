@@ -42,8 +42,19 @@ export const refreshToken = async (req, res, next) => {
 
 export const getProfile = async (req, res, next) => {
   try {
-    return res.status(200).json(new ApiResponse(200, { user: req.user }, "User profile retrieved successfully"));
+    const user = await authService.getUserProfile(req.user.id);
+    return res.status(200).json(new ApiResponse(200, { user }, "User profile retrieved successfully"));
   } catch (error) {
     next(error);
   }
 };
+
+export const updateProfile = async (req, res, next) => {
+  try {
+    const user = await authService.updateUserProfile(req.user.id, req.body);
+    return res.status(200).json(new ApiResponse(200, { user }, "User profile updated successfully"));
+  } catch (error) {
+    next(error);
+  }
+};
+

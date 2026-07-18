@@ -20,12 +20,14 @@ import {
   Bell,
   LogOut,
   LogIn,
+  LayoutDashboard,
 } from "lucide-react";
 import { getInitials } from "@/lib/utils";
 
 const navLinks = [
   { label: "Home", href: "/" },
   { label: "Products", href: "/products", icon: Package },
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, protected: true },
   { label: "My Rentals", href: "/my-rentals", icon: ClipboardList, protected: true },
 ];
 
@@ -121,6 +123,10 @@ function Navbar() {
                     <DropdownMenuItem onClick={() => navigate("/profile")}>
                       <User className="h-4 w-4" />
                       Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/dashboard")}>
+                      <LayoutDashboard className="h-4 w-4" />
+                      Dashboard
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate("/my-rentals")}>
                       <ClipboardList className="h-4 w-4" />

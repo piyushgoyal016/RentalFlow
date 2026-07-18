@@ -49,7 +49,7 @@ export default function RegisterPage() {
         phone: data.phone,
       });
       toast.success("Account created!", { description: "Welcome to RentFlow." });
-      navigate("/", { replace: true });
+      navigate("/dashboard", { replace: true });
     } catch (error) {
       toast.error("Registration failed", { description: error.message });
     }

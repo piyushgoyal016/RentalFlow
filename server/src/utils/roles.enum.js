@@ -3,6 +3,7 @@
  */
 export const ROLES = {
   ADMIN: "ADMIN",
-  MANAGER: "MANAGER",
+  VENDOR: "VENDOR",
   CUSTOMER: "CUSTOMER"
 };
+

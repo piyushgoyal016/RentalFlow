@@ -59,3 +59,20 @@ export const findRoleByName = async (name) => {
     where: { name },
   });
 };
+
+/**
+ * Update user in database
+ * @param {string} id
+ * @param {object} updateData
+ * @returns {Promise<object>}
+ */
+export const updateUser = async (id, updateData) => {
+  return prisma.user.update({
+    where: { id },
+    data: updateData,
+    include: {
+      role: true,
+    },
+  });
+};
+

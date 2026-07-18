@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,89 +7,348 @@
    Base Styles
    ============================================ */
 
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  font-family: var(--font-sans);
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #f8fafc;
-  color: #1e293b;
+  color: #0f172a;
   line-height: 1.6;
 }
 
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 8px;
-}
-::-webkit-scrollbar-track {
-  background: #f1f5f9;
-}
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+/* Dark mode body */
+.dark body {
+  background-color: #0f172a;
+  color: #f1f5f9;
 }
 
 /* ============================================
-   Utility Classes
+   Custom Scrollbar
    ============================================ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+.dark ::-webkit-scrollbar-thumb { background: #334155; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
 
-.glass {
-  background: rgba(255, 255, 255, 0.8);
+/* ============================================
+   Admin Layout
+   ============================================ */
+.admin-layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.dark .admin-layout {
+  background: #0f172a;
+}
+
+.admin-sidebar {
+  flex-shrink: 0;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #ffffff;
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+}
+
+.dark .admin-sidebar {
+  background: #0f172a;
+  border-right-color: #1e293b;
+}
+
+.admin-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.admin-topbar {
+  flex-shrink: 0;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  background: rgba(255,255,255,0.95);
+  border-bottom: 1px solid #e2e8f0;
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 0 24px;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.dark .admin-topbar {
+  background: rgba(15,23,42,0.95);
+  border-bottom-color: #1e293b;
+}
+
+.admin-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px;
+}
+
+/* ============================================
+   Sidebar Nav Item
+   ============================================ */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+  position: relative;
+  white-space: nowrap;
+  overflow: hidden;
+  text-decoration: none;
+}
+
+.nav-item:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.dark .nav-item:hover {
+  background: #1e293b;
+  color: #f1f5f9;
+}
+
+.nav-item.active {
+  background: #eff6ff;
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.dark .nav-item.active {
+  background: #1e3a8a22;
+  color: #60a5fa;
+}
+
+.nav-active-indicator {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  background: #2563eb;
+  border-radius: 0 3px 3px 0;
+}
+
+/* ============================================
+   Glass Card
+   ============================================ */
+.glass {
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.4);
 }
 
 .glass-dark {
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(15,23,42,0.85);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255,255,255,0.08);
 }
 
+/* ============================================
+   Stat Card
+   ============================================ */
+.stat-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  padding: 24px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.stat-card:hover {
+  box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+}
+
+.dark .stat-card {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+/* ============================================
+   Data Table
+   ============================================ */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.dark .data-table th {
+  background: #0f172a;
+  border-bottom-color: #1e293b;
+  color: #475569;
+}
+
+.data-table td {
+  padding: 14px 16px;
+  font-size: 14px;
+  color: #0f172a;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.dark .data-table td {
+  color: #e2e8f0;
+  border-bottom-color: #1e293b;
+}
+
+.data-table tbody tr:hover td {
+  background: #f8fafc;
+}
+
+.dark .data-table tbody tr:hover td {
+  background: #1e293b44;
+}
+
+/* ============================================
+   Skeleton Loader
+   ============================================ */
+.skeleton {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+.dark .skeleton {
+  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* ============================================
+   Status Badges
+   ============================================ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.badge-active   { background: #dcfce7; color: #15803d; }
+.badge-pending  { background: #fef3c7; color: #d97706; }
+.badge-overdue  { background: #fee2e2; color: #b91c1c; }
+.badge-completed { background: #dbeafe; color: #1d4ed8; }
+.badge-cancelled { background: #f1f5f9; color: #64748b; }
+.badge-refunded  { background: #f0fdf4; color: #16a34a; }
+.badge-failed    { background: #fee2e2; color: #dc2626; }
+
+.dark .badge-active    { background: #14532d55; color: #4ade80; }
+.dark .badge-pending   { background: #78350f55; color: #fcd34d; }
+.dark .badge-overdue   { background: #7f1d1d55; color: #f87171; }
+.dark .badge-completed { background: #1e3a8a55; color: #93c5fd; }
+
+/* ============================================
+   Chart Container
+   ============================================ */
+.chart-container {
+  width: 100%;
+  position: relative;
+}
+
+/* ============================================
+   Gradient Backgrounds
+   ============================================ */
 .gradient-primary {
-  background: linear-gradient(135deg, var(--color-primary-600), var(--color-primary-800));
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
 }
 
-.gradient-accent {
-  background: linear-gradient(135deg, var(--color-accent-500), var(--color-primary-600));
+.gradient-success {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+}
+
+.gradient-warning {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.gradient-danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .gradient-hero {
   background: linear-gradient(135deg, #1e1b4b 0%, #312e81 30%, #4338ca 60%, #0f766e 100%);
 }
 
-.gradient-text {
-  background: linear-gradient(135deg, var(--color-primary-500), var(--color-accent-400));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
+/* ============================================
+   Hover Lift
+   ============================================ */
 .hover-lift {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .hover-lift:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.1);
 }
 
-/* Focus ring utility */
+/* ============================================
+   Focus Ring
+   ============================================ */
 .focus-ring {
   outline: none;
 }
 .focus-ring:focus-visible {
-  outline: 2px solid var(--color-primary-500);
+  outline: 2px solid #2563eb;
   outline-offset: 2px;
 }
 
-/* Container */
+/* ============================================
+   Container
+   ============================================ */
 .container-app {
   width: 100%;
   max-width: 1280px;
@@ -99,15 +359,121 @@ body {
 }
 
 @media (min-width: 640px) {
-  .container-app {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-  }
+  .container-app { padding-left: 1.5rem; padding-right: 1.5rem; }
+}
+@media (min-width: 1024px) {
+  .container-app { padding-left: 2rem; padding-right: 2rem; }
 }
 
-@media (min-width: 1024px) {
-  .container-app {
-    padding-left: 2rem;
-    padding-right: 2rem;
-  }
+/* ============================================
+   Page Transition
+   ============================================ */
+.page-enter {
+  animation: slide-up 0.35s ease-out;
+}
+
+/* ============================================
+   Drawer
+   ============================================ */
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(2px);
+  z-index: 100;
+}
+
+.drawer-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: white;
+  box-shadow: -20px 0 60px rgba(0,0,0,0.15);
+  z-index: 101;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.dark .drawer-panel {
+  background: #0f172a;
+  border-left: 1px solid #1e293b;
+}
+
+/* ============================================
+   Command Palette
+   ============================================ */
+.command-palette-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 15vh;
+}
+
+.command-palette-box {
+  background: white;
+  border-radius: 16px;
+  width: 600px;
+  max-width: calc(100vw - 32px);
+  box-shadow: 0 25px 80px rgba(0,0,0,0.3);
+  overflow: hidden;
+}
+
+.dark .command-palette-box {
+  background: #1e293b;
+  border: 1px solid #334155;
+}
+
+/* ============================================
+   Wizard Steps
+   ============================================ */
+.step-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.step-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  z-index: 1;
+}
+
+.step-line {
+  flex: 1;
+  height: 2px;
+  background: #e2e8f0;
+  transition: background 0.3s ease;
+}
+
+.step-line.active { background: #2563eb; }
+
+/* ============================================
+   Recharts Overrides
+   ============================================ */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: #f1f5f9;
+}
+.dark .recharts-cartesian-grid-horizontal line,
+.dark .recharts-cartesian-grid-vertical line {
+  stroke: #1e293b;
+}
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  border-radius: 10px !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
 }

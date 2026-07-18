@@ -1,71 +1,118 @@
-import { mockUser } from "@/data/mockData";
-
-// Mock auth service — replace with real API calls when backend is ready.
-
-const MOCK_DELAY = 500;
-
-function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+import api from "./api";
 
 export const authService = {
   async login(email, password) {
-    await delay(MOCK_DELAY);
-
-    // Mock validation
     if (!email || !password) {
       throw new Error("Email and password are required");
     }
 
-    if (password.length < 6) {
-      throw new Error("Invalid credentials");
+    try {
+      const response = await api.post("/auth/login", { email, password });
+      
+      // The backend returns an ApiResponse wrapper: { success: true, data: { user, accessToken, refreshToken } }
+      const apiResponse = response.data;
+      if (!apiResponse?.success) {
+        throw new Error(apiResponse?.message || "Invalid credentials");
+      }
+
+      const { user, accessToken, refreshToken } = apiResponse.data;
+      
+      // Store refreshToken for session / logout
+      if (refreshToken) {
+        localStorage.setItem("rentflow_refresh_token", refreshToken);
+      }
+
+      return {
+        token: accessToken,
+        user: {
+          id: user.id,
+          name: `${user.firstName} ${user.lastName}`,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          role: user.role?.name || "CUSTOMER",
+          phone: user.phone || "",
+          joinedAt: user.createdAt,
+        }
+      };
+    } catch (error) {
+      const msg = error.response?.data?.message || error.message || "Login failed";
+      throw new Error(msg);
     }
-
-    // Simulate successful login
-    const token = "mock-jwt-token-" + Date.now();
-    const user = { ...mockUser, email };
-
-    return { token, user };
   },
 
   async register(data) {
-    await delay(MOCK_DELAY);
+    const { name, email, password, phone, roleName = "CUSTOMER" } = data;
 
-    const { name, email, password, phone } = data;
-
-    if (!name || !email || !password) {
-      throw new Error("All fields are required");
+    if (!email || !password) {
+      throw new Error("Email and password are required");
     }
 
-    if (password.length < 6) {
-      throw new Error("Password must be at least 6 characters");
+    // Split name into first and last name
+    const nameParts = (name || "").trim().split(" ");
+    const firstName = nameParts[0] || "User";
+    const lastName = nameParts.slice(1).join(" ") || "Member";
+
+    try {
+      const response = await api.post("/auth/register", {
+        firstName,
+        lastName,
+        email,
+        password,
+        phone: phone || "",
+        roleName: roleName.toUpperCase(),
+      });
+
+      const apiResponse = response.data;
+      if (!apiResponse?.success) {
+        throw new Error(apiResponse?.message || "Registration failed");
+      }
+
+      const { user, accessToken, refreshToken } = apiResponse.data;
+      
+      if (refreshToken) {
+        localStorage.setItem("rentflow_refresh_token", refreshToken);
+      }
+
+      return {
+        token: accessToken,
+        user: {
+          id: user.id,
+          name: `${user.firstName} ${user.lastName}`,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          role: user.role?.name || "CUSTOMER",
+          phone: user.phone || "",
+          joinedAt: user.createdAt,
+        }
+      };
+    } catch (error) {
+      const msg = error.response?.data?.message || error.message || "Registration failed";
+      throw new Error(msg);
     }
-
-    const token = "mock-jwt-token-" + Date.now();
-    const user = {
-      ...mockUser,
-      id: "user-" + Date.now(),
-      name,
-      email,
-      phone: phone || "",
-      joinedAt: new Date().toISOString(),
-    };
-
-    return { token, user };
   },
 
   async logout() {
-    await delay(200);
+    try {
+      const refreshToken = localStorage.getItem("rentflow_refresh_token");
+      if (refreshToken) {
+        await api.post("/auth/logout", { refreshToken });
+      }
+    } catch (error) {
+      console.warn("API logout failed:", error);
+    } finally {
+      localStorage.removeItem("rentflow_refresh_token");
+    }
     return { message: "Logged out successfully" };
   },
 
   async forgotPassword(email) {
-    await delay(MOCK_DELAY);
-
     if (!email) {
       throw new Error("Email is required");
     }
-
+    // Simulate forgot password call
+    await new Promise((resolve) => setTimeout(resolve, 500));
     return { message: "Password reset link sent to your email" };
   },
 };

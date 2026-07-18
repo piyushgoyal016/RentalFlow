@@ -11,20 +11,32 @@ export function AuthProvider({ children }) {
 
   // Restore session on mount
   useEffect(() => {
-    const savedToken = localStorage.getItem("rentflow_token");
-    const savedUser = localStorage.getItem("rentflow_user");
+    async function restoreSession() {
+      const savedToken = localStorage.getItem("rentflow_token");
+      const savedUser = localStorage.getItem("rentflow_user");
 
-    if (savedToken && savedUser) {
-      try {
-        setToken(savedToken);
-        setUser(JSON.parse(savedUser));
-      } catch {
-        localStorage.removeItem("rentflow_token");
-        localStorage.removeItem("rentflow_user");
+      if (savedToken) {
+        try {
+          setToken(savedToken);
+          if (savedUser) {
+            setUser(JSON.parse(savedUser));
+          }
+          const freshUser = await profileService.getProfile();
+          setUser(freshUser);
+          localStorage.setItem("rentflow_user", JSON.stringify(freshUser));
+        } catch {
+          localStorage.removeItem("rentflow_token");
+          localStorage.removeItem("rentflow_user");
+          localStorage.removeItem("rentflow_refresh_token");
+          setToken(null);
+          setUser(null);
+        }
       }
+      setIsLoading(false);
     }
-    setIsLoading(false);
+    restoreSession();
   }, []);
+
 
   const login = useCallback(async (email, password) => {
     const result = await authService.login(email, password);

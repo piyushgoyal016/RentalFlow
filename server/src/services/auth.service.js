@@ -124,3 +124,32 @@ export const logoutUser = async (token) => {
     }
   }
 };
+
+/**
+ * Get user profile details
+ */
+export const getUserProfile = async (userId) => {
+  const user = await userRepository.findUserById(userId);
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+  const { password, ...sanitizedUser } = user;
+  return sanitizedUser;
+};
+
+/**
+ * Update user profile details
+ */
+export const updateUserProfile = async (userId, payload) => {
+  const { firstName, lastName, phone } = payload;
+  const updateData = {};
+  if (firstName !== undefined) updateData.firstName = firstName;
+  if (lastName !== undefined) updateData.lastName = lastName;
+  if (phone !== undefined) updateData.phone = phone;
+
+  const user = await userRepository.updateUser(userId, updateData);
+  const { password, ...sanitizedUser } = user;
+  return sanitizedUser;
+};
+
+

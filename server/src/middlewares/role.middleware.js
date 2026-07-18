@@ -12,8 +12,14 @@ export const requireRoles = (...allowedRoles) => {
       return next(new ApiError(401, "Authentication required"));
     }
 
+    const userRole = req.user.role.toUpperCase();
+    const rolesToCheck = [userRole];
+    if (userRole === "VENDOR") {
+      rolesToCheck.push("MANAGER");
+    }
+
     const hasRole = allowedRoles.some(
-      (role) => req.user.role.toUpperCase() === role.toUpperCase()
+      (role) => rolesToCheck.includes(role.toUpperCase())
     );
 
     if (!hasRole) {

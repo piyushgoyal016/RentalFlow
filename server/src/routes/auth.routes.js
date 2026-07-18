@@ -18,6 +18,8 @@ router.post("/refresh-token", authController.refreshToken);
 // ── Protected Routes (Require Authentication) ───────────────────────────────
 
 router.get("/me", requireAuth, authController.getProfile);
+router.put("/me", requireAuth, authController.updateProfile);
+
 
 // ── Protected Role Route Example (Require Admin Role) ────────────────────────
 

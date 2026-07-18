@@ -114,7 +114,7 @@ export default function ProfilePage() {
                       <Label htmlFor="email">Email</Label>
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                        <Input id="email" type="email" className="pl-10" {...register("email")} />
+                        <Input id="email" type="email" className="pl-10" {...register("email")} disabled />
                       </div>
                       {errors.email && <p className="text-sm text-danger-600">{errors.email.message}</p>}
                     </div>

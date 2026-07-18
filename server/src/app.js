@@ -34,9 +34,26 @@ app.use("/api", apiLimiter);
 
 // ── Middleware ──────────────────────────────────────────────────────────────
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:3000"
+];
+
+if (config.cors.origin) {
+  allowedOrigins.push(config.cors.origin);
+}
+
 app.use(cors({
-  origin: config.cors.origin,
-  credentials: true, // allows cookies / auth headers cross-origin
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const isLocalhost = origin.startsWith("http://localhost:") || origin.startsWith("https://localhost:");
+    if (allowedOrigins.includes(origin) || isLocalhost) {
+      return callback(null, true);
+    }
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
 }));
 
 app.use(express.json({ limit: "10kb" }));
