@@ -26,14 +26,22 @@ export const create = async (data) => {
   });
 };
 
-export const findAll = async () => {
-  return await prisma.product.findMany({
-    include: {
-      images: true,
-      variants: true,
-      category: true
-    }
-  });
+export const findAll = async (skip = 0, take = 10) => {
+  const [data, totalCount] = await Promise.all([
+    prisma.product.findMany({
+      skip,
+      take,
+      include: {
+        images: true,
+        variants: true,
+        category: true
+      },
+      orderBy: { createdAt: 'desc' }
+    }),
+    prisma.product.count()
+  ]);
+
+  return { data, totalCount };
 };
 
 export const findById = async (id) => {
@@ -48,7 +56,6 @@ export const findById = async (id) => {
 };
 
 export const update = async (id, data) => {
-  // Simple update for core fields. For images/variants, usually we would delete and recreate or upsert.
   return await prisma.product.update({
     where: { id },
     data,

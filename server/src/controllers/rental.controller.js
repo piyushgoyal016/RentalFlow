@@ -13,7 +13,9 @@ export const rentProduct = async (req, res, next) => {
 
 export const getMyRentals = async (req, res, next) => {
   try {
-    const rentals = await rentalService.getRentalOrders(req.user);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const rentals = await rentalService.getRentalOrders(req.user, page, limit);
     return res.status(200).json(new ApiResponse(200, rentals, "Rentals fetched successfully"));
   } catch (error) {
     next(error);
@@ -22,7 +24,9 @@ export const getMyRentals = async (req, res, next) => {
 
 export const getAllRentals = async (req, res, next) => {
   try {
-    const rentals = await rentalService.getRentalOrders(req.user);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const rentals = await rentalService.getRentalOrders(req.user, page, limit);
     return res.status(200).json(new ApiResponse(200, rentals, "All rentals fetched successfully"));
   } catch (error) {
     next(error);

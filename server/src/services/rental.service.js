@@ -48,8 +48,9 @@ export const rentProduct = async (userId, rentalData) => {
   return await rentalRepository.createRentalOrder(orderData);
 };
 
-export const getRentalOrders = async (user) => {
-  return await rentalRepository.findAll(user.id, user.role);
+export const getRentalOrders = async (user, page = 1, limit = 10) => {
+  const skip = (page - 1) * limit;
+  return await rentalRepository.findAll(user.id, user.role, skip, limit);
 };
 
 export const getRentalOrderById = async (id, user) => {

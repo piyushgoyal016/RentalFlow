@@ -23,7 +23,9 @@ export const getReturn = async (req, res, next) => {
 
 export const getAllReturns = async (req, res, next) => {
   try {
-    const returns = await returnService.getAllReturns();
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const returns = await returnService.getAllReturns(page, limit);
     return res.status(200).json(new ApiResponse(200, returns, "Returns history fetched successfully"));
   } catch (error) {
     next(error);

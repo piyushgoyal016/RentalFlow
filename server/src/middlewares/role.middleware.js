@@ -1,4 +1,5 @@
 import ApiError from "../utils/ApiError.js";
+import { ROLES } from "../utils/roles.enum.js";
 
 /**
  * Express middleware to restrict route access to specific roles.

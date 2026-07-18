@@ -3,53 +3,13 @@ generator client {
   output   = "../generated/prisma"
 }
 
-// In Prisma v7, the datasource URL is NO LONGER set here.
-// It is managed in prisma.config.ts via the `datasource.url` field.
-// Only the `provider` stays here so Prisma knows which SQL dialect to use.
 datasource db {
   provider = "postgresql"
 }
 
 // ---------------------------------------------------------------------------
-// Role Model
-// Defines access control levels. A User must always belong to a Role.
+// ENUMS
 // ---------------------------------------------------------------------------
-model Role {
-  id          String   @id @default(uuid())
-  name        String   @unique  // e.g. "ADMIN", "MANAGER", "CUSTOMER"
-  description String?
-
-  users User[]  // one role → many users
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// ---------------------------------------------------------------------------
-// User Model
-// Core identity entity. Every authenticated person in the system is a User.
-// ---------------------------------------------------------------------------
-model User {
-  id        String  @id @default(uuid())
-  firstName String
-  lastName  String
-  email     String  @unique
-  password  String  // stored as bcrypt hash — NEVER plain text
-  phone     String?
-  isActive  Boolean @default(true)
-
-  // Foreign key to Role — enforces that every user has a role
-  roleId String
-  role   Role   @relation(fields: [roleId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  rentalOrders  RentalOrder[]
-  notifications Notification[]
-}
-
-// --- ENUMS ---
 enum RentalStatus {
   PENDING
   ACTIVE
@@ -65,23 +25,98 @@ enum PaymentStatus {
   REFUNDED
 }
 
-// --- NEW MODELS ---
+enum AddressType {
+  BILLING
+  SHIPPING
+  BOTH
+}
 
+// ---------------------------------------------------------------------------
+// IDENTITY & ACCESS MANAGEMENT
+// ---------------------------------------------------------------------------
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  users       User[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model User {
+  id        String    @id @default(uuid())
+  firstName String
+  lastName  String
+  email     String    @unique
+  password  String
+  phone     String?
+  isActive  Boolean   @default(true)
+  deletedAt DateTime?
+
+  roleId String
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  addresses     Address[]
+  rentalOrders  RentalOrder[]
+  notifications Notification[]
+  reviews       Review[]
+  cart          Cart?
+  auditLogs     AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([roleId])
+}
+
+model Address {
+  id        String      @id @default(uuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      AddressType @default(BOTH)
+  street    String
+  city      String
+  state     String
+  zipCode   String
+  country   String
+  isDefault Boolean     @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model TokenBlacklist {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([token])
+}
+
+// ---------------------------------------------------------------------------
+// CATALOG MANAGEMENT
+// ---------------------------------------------------------------------------
 model Category {
   id          String    @id @default(uuid())
   name        String    @unique
   description String?
   isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
 
-  products    Product[]
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Product {
-  id                String    @id @default(uuid())
-  categoryId        String
-  category          Category  @relation(fields: [categoryId], references: [id])
+  id         String   @id @default(uuid())
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
   name              String
   description       String?
   barcode           String?   @unique
@@ -90,12 +125,18 @@ model Product {
   rentalPricePerDay Float
   depositAmount     Float
   stockQuantity     Int       @default(1)
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
 
-  images            ProductImage[]
-  variants          ProductVariant[]
-  rentalItems       RentalItem[]
+  images      ProductImage[]
+  variants    ProductVariant[]
+  rentalItems RentalItem[]
+  reviews     Review[]
+  cartItems   CartItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoryId])
 }
 
 model ProductImage {
@@ -104,31 +145,111 @@ model ProductImage {
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   url       String
   isPrimary Boolean @default(false)
+
+  @@index([productId])
 }
 
 model ProductVariant {
   id        String  @id @default(uuid())
   productId String
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  name      String  // e.g. Color, Size
-  value     String  // e.g. Red, XL
+  name      String
+  value     String
+
+  @@index([productId])
 }
 
-model RentalOrder {
-  id             String       @id @default(uuid())
-  userId         String
-  user           User         @relation(fields: [userId], references: [id])
-  status         RentalStatus @default(PENDING)
-  pickupDate     DateTime
-  returnDate     DateTime
-  totalCost      Float
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+model Review {
+  id        String  @id @default(uuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  items          RentalItem[]
-  payment        Payment?
-  deposit        SecurityDeposit?
-  returnInspec   ReturnInspection?
+  rating  Int // 1-5
+  comment String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+  @@index([userId])
+}
+
+// ---------------------------------------------------------------------------
+// SHOPPING CART (Pre-Rental)
+// ---------------------------------------------------------------------------
+model Cart {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  items CartItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CartItem {
+  id        String  @id @default(uuid())
+  cartId    String
+  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  quantity Int @default(1)
+
+  @@index([cartId])
+  @@index([productId])
+}
+
+// ---------------------------------------------------------------------------
+// COUPONS & DISCOUNTS
+// ---------------------------------------------------------------------------
+model Coupon {
+  id           String    @id @default(uuid())
+  code         String    @unique
+  discountPct  Float?
+  discountFlat Float?
+  maxUsage     Int?
+  usageCount   Int       @default(0)
+  expiresAt    DateTime?
+  isActive     Boolean   @default(true)
+
+  rentalOrders RentalOrder[]
+
+  createdAt DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// RENTAL ORDER MANAGEMENT
+// ---------------------------------------------------------------------------
+model RentalOrder {
+  id     String       @id @default(uuid())
+  userId String
+  user   User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  status RentalStatus @default(PENDING)
+
+  couponId String?
+  coupon   Coupon? @relation(fields: [couponId], references: [id], onDelete: SetNull)
+
+  pickupDate DateTime
+  returnDate DateTime
+
+  totalCost      Float
+  discountAmount Float @default(0)
+  finalCost      Float @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items        RentalItem[]
+  payment      Payment?
+  deposit      SecurityDeposit?
+  returnInspec ReturnInspection?
+
+  @@index([userId])
+  @@index([couponId])
 }
 
 model RentalItem {
@@ -136,15 +257,19 @@ model RentalItem {
   rentalOrderId String
   rentalOrder   RentalOrder @relation(fields: [rentalOrderId], references: [id], onDelete: Cascade)
   productId     String
-  product       Product     @relation(fields: [productId], references: [id])
-  quantity      Int
-  pricePerDay   Float
+  product       Product     @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  quantity    Int
+  pricePerDay Float
+
+  @@index([rentalOrderId])
+  @@index([productId])
 }
 
 model Payment {
   id            String        @id @default(uuid())
   rentalOrderId String        @unique
-  rentalOrder   RentalOrder   @relation(fields: [rentalOrderId], references: [id])
+  rentalOrder   RentalOrder   @relation(fields: [rentalOrderId], references: [id], onDelete: Cascade)
   amount        Float
   status        PaymentStatus @default(PENDING)
   invoiceUrl    String?
@@ -153,43 +278,62 @@ model Payment {
 }
 
 model SecurityDeposit {
-  id            String        @id @default(uuid())
-  rentalOrderId String        @unique
-  rentalOrder   RentalOrder   @relation(fields: [rentalOrderId], references: [id])
+  id            String      @id @default(uuid())
+  rentalOrderId String      @unique
+  rentalOrder   RentalOrder @relation(fields: [rentalOrderId], references: [id], onDelete: Cascade)
   amount        Float
-  isRefunded    Boolean       @default(false)
+  isRefunded    Boolean     @default(false)
   refundAmount  Float?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }
 
 model ReturnInspection {
-  id                 String       @id @default(uuid())
-  rentalOrderId      String       @unique
-  rentalOrder        RentalOrder  @relation(fields: [rentalOrderId], references: [id])
-  returnedAt         DateTime     @default(now())
-  isDamaged          Boolean      @default(false)
+  id                 String      @id @default(uuid())
+  rentalOrderId      String      @unique
+  rentalOrder        RentalOrder @relation(fields: [rentalOrderId], references: [id], onDelete: Cascade)
+  returnedAt         DateTime    @default(now())
+  isDamaged          Boolean     @default(false)
   damageReport       String?
   missingAccessories String?
   lateFee            LateFee?
 }
 
 model LateFee {
-  id                 String            @id @default(uuid())
-  returnInspectionId String            @unique
-  returnInspection   ReturnInspection  @relation(fields: [returnInspectionId], references: [id], onDelete: Cascade)
+  id                 String           @id @default(uuid())
+  returnInspectionId String           @unique
+  returnInspection   ReturnInspection @relation(fields: [returnInspectionId], references: [id], onDelete: Cascade)
   daysLate           Int
   penaltyAmount      Float
-  isPaid             Boolean           @default(false)
-  createdAt          DateTime          @default(now())
+  isPaid             Boolean          @default(false)
+  createdAt          DateTime         @default(now())
 }
 
+// ---------------------------------------------------------------------------
+// NOTIFICATIONS & AUDITING
+// ---------------------------------------------------------------------------
 model Notification {
   id        String   @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  type      String   // EMAIL_REMINDER, PICKUP, RETURN, LATE_RETURN
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String // EMAIL_REMINDER, PICKUP, RETURN, LATE_RETURN
   message   String
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String
+  details   String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity, entityId])
 }

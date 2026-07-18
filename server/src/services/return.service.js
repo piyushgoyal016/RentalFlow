@@ -19,12 +19,7 @@ export const processReturn = async (rentalOrderId, data) => {
     missingAccessories: data.missingAccessories || null
   };
 
-  const returnInspection = await returnRepository.create(inspectionData);
-  
-  // Mark rental order as completed
-  await rentalRepository.updateStatus(rentalOrderId, "COMPLETED");
-
-  return returnInspection;
+  return await returnRepository.createReturnWithRestock(inspectionData, rental.items);
 };
 
 export const getReturnInspection = async (id) => {
@@ -33,6 +28,7 @@ export const getReturnInspection = async (id) => {
   return inspection;
 };
 
-export const getAllReturns = async () => {
-  return await returnRepository.findAll();
+export const getAllReturns = async (page = 1, limit = 10) => {
+  const skip = (page - 1) * limit;
+  return await returnRepository.findAll(skip, limit);
 };

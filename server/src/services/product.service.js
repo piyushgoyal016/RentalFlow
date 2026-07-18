@@ -5,8 +5,9 @@ export const createProduct = async (data) => {
   return await productRepository.create(data);
 };
 
-export const getAllProducts = async () => {
-  return await productRepository.findAll();
+export const getAllProducts = async (page = 1, limit = 10) => {
+  const skip = (page - 1) * limit;
+  return await productRepository.findAll(skip, limit);
 };
 
 export const getProductById = async (id) => {

@@ -13,6 +13,7 @@ const router = Router();
 router.post("/register", validate(registerSchema), authController.register);
 router.post("/login", validate(loginSchema), authController.login);
 router.post("/logout", authController.logout);
+router.post("/refresh-token", authController.refreshToken);
 
 // ── Protected Routes (Require Authentication) ───────────────────────────────
 
@@ -25,9 +26,7 @@ router.get(
   requireAuth,
   requireRoles("ADMIN"),
   (req, res) => {
-    res
-      .status(200)
-      .json(new ApiResponse(200, { secretData: "Enterprise analytics loaded." }, "Welcome Admin"));
+    res.status(200).json(new ApiResponse(200, { secretData: "Enterprise analytics loaded." }, "Welcome Admin"));
   }
 );
 

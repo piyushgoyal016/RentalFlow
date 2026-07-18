@@ -12,7 +12,9 @@ export const createProduct = async (req, res, next) => {
 
 export const getAllProducts = async (req, res, next) => {
   try {
-    const products = await productService.getAllProducts();
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const products = await productService.getAllProducts(page, limit);
     return res.status(200).json(new ApiResponse(200, products, "Products fetched successfully"));
   } catch (error) {
     next(error);

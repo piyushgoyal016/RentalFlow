@@ -5,6 +5,7 @@
 
 import { config } from "../config/env.js";
 import ApiError from "../utils/ApiError.js";
+import { logger } from "../config/logger.js";
 
 const errorHandler = (err, req, res, next) => {
   let error = err;
@@ -17,10 +18,13 @@ const errorHandler = (err, req, res, next) => {
   }
 
   // Handle specific Prisma database errors
-  // P2002: Unique constraint failed (e.g. duplicate email)
   if (err.code === "P2002") {
     const field = err.meta?.target ? err.meta.target.join(", ") : "field";
     error = new ApiError(400, `Duplicate value for unique: ${field}`);
+  } else if (err.code === "P2025") {
+    error = new ApiError(404, "Record not found");
+  } else if (err.code === "P2003") {
+    error = new ApiError(400, "Foreign key constraint failed");
   }
 
   const response = {
@@ -30,9 +34,11 @@ const errorHandler = (err, req, res, next) => {
     ...(config.isDevelopment && { stack: error.stack }), // Only show stack trace in dev mode
   };
 
-  // Log error locally in development
-  if (config.isDevelopment) {
-    console.error(`❌ [ERROR] ${req.method} ${req.originalUrl}:`, error.message);
+  // Log error using Winston
+  if (error.statusCode >= 500) {
+    logger.error(`[SERVER FAULT] ${req.method} ${req.originalUrl}:`, { error: error.message, stack: error.stack });
+  } else {
+    logger.warn(`[CLIENT ERROR] ${req.method} ${req.originalUrl}:`, { message: error.message });
   }
 
   res.status(error.statusCode).json(response);
