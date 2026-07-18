@@ -1,0 +1,13 @@
+// This is a snippet. You should add this to your existing server/prisma/schema.prisma file.
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations (Uncomment when Product module is added)
+  // products Product[]
+}
