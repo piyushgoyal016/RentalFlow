@@ -1,27 +1,31 @@
 import express from "express";
-import * as returnController from "../controllers/return.controller.js";
+import * as lateFeeController from "../controllers/lateFee.controller.js";
 import { validate } from "../middlewares/validate.middleware.js";
-import { processReturnSchema } from "../validators/return.validator.js";
+import { calculateFeeSchema } from "../validators/lateFee.validator.js";
 import { requireAuth } from "../middlewares/auth.middleware.js";
 import { requireRoles } from "../middlewares/role.middleware.js";
 
 const router = express.Router();
 
 router.post(
-  "/",
+  "/charge",
   requireAuth,
   requireRoles("ADMIN", "MANAGER"),
-  validate(processReturnSchema),
-  returnController.processReturn
+  validate(calculateFeeSchema),
+  lateFeeController.chargeLateFee
+);
+
+router.post(
+  "/:id/pay",
+  requireAuth,
+  lateFeeController.payLateFee
 );
 
 router.get(
   "/",
   requireAuth,
   requireRoles("ADMIN", "MANAGER"),
-  returnController.getAllReturns
+  lateFeeController.getLateFees
 );
-
-router.get("/:id", requireAuth, returnController.getReturn);
 
 export default router;

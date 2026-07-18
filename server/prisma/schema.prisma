@@ -44,4 +44,152 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  rentalOrders  RentalOrder[]
+  notifications Notification[]
+}
+
+// --- ENUMS ---
+enum RentalStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+// --- NEW MODELS ---
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  products    Product[]
+}
+
+model Product {
+  id                String    @id @default(uuid())
+  categoryId        String
+  category          Category  @relation(fields: [categoryId], references: [id])
+  name              String
+  description       String?
+  barcode           String?   @unique
+  qrCode            String?   @unique
+  isAvailable       Boolean   @default(true)
+  rentalPricePerDay Float
+  depositAmount     Float
+  stockQuantity     Int       @default(1)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  images            ProductImage[]
+  variants          ProductVariant[]
+  rentalItems       RentalItem[]
+}
+
+model ProductImage {
+  id        String  @id @default(uuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  isPrimary Boolean @default(false)
+}
+
+model ProductVariant {
+  id        String  @id @default(uuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name      String  // e.g. Color, Size
+  value     String  // e.g. Red, XL
+}
+
+model RentalOrder {
+  id             String       @id @default(uuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+  status         RentalStatus @default(PENDING)
+  pickupDate     DateTime
+  returnDate     DateTime
+  totalCost      Float
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  items          RentalItem[]
+  payment        Payment?
+  deposit        SecurityDeposit?
+  returnInspec   ReturnInspection?
+}
+
+model RentalItem {
+  id            String      @id @default(uuid())
+  rentalOrderId String
+  rentalOrder   RentalOrder @relation(fields: [rentalOrderId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product     @relation(fields: [productId], references: [id])
+  quantity      Int
+  pricePerDay   Float
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  rentalOrderId String        @unique
+  rentalOrder   RentalOrder   @relation(fields: [rentalOrderId], references: [id])
+  amount        Float
+  status        PaymentStatus @default(PENDING)
+  invoiceUrl    String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model SecurityDeposit {
+  id            String        @id @default(uuid())
+  rentalOrderId String        @unique
+  rentalOrder   RentalOrder   @relation(fields: [rentalOrderId], references: [id])
+  amount        Float
+  isRefunded    Boolean       @default(false)
+  refundAmount  Float?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model ReturnInspection {
+  id                 String       @id @default(uuid())
+  rentalOrderId      String       @unique
+  rentalOrder        RentalOrder  @relation(fields: [rentalOrderId], references: [id])
+  returnedAt         DateTime     @default(now())
+  isDamaged          Boolean      @default(false)
+  damageReport       String?
+  missingAccessories String?
+  lateFee            LateFee?
+}
+
+model LateFee {
+  id                 String            @id @default(uuid())
+  returnInspectionId String            @unique
+  returnInspection   ReturnInspection  @relation(fields: [returnInspectionId], references: [id], onDelete: Cascade)
+  daysLate           Int
+  penaltyAmount      Float
+  isPaid             Boolean           @default(false)
+  createdAt          DateTime          @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   // EMAIL_REMINDER, PICKUP, RETURN, LATE_RETURN
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
 }

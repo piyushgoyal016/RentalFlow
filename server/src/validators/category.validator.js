@@ -1,34 +1,26 @@
-const Joi = require('joi');
-
-const createCategorySchema = Joi.object({
-  name: Joi.string().required().min(3).max(100),
-  description: Joi.string().optional().allow(null, ''),
-  isActive: Joi.boolean().optional()
-});
-
-const updateCategorySchema = Joi.object({
-  name: Joi.string().min(3).max(100).optional(),
-  description: Joi.string().optional().allow(null, ''),
-  isActive: Joi.boolean().optional()
-});
-
-const validateCreateCategory = (req, res, next) => {
-  const { error } = createCategorySchema.validate(req.body);
-  if (error) {
-    return res.status(400).json({ success: false, message: error.details[0].message });
-  }
-  next();
+export const createCategorySchema = {
+  name: {
+    required: true,
+    minLength: 3,
+    message: "Name must be at least 3 characters long",
+  },
+  description: {
+    required: false,
+  },
+  isActive: {
+    required: false,
+  },
 };
 
-const validateUpdateCategory = (req, res, next) => {
-  const { error } = updateCategorySchema.validate(req.body);
-  if (error) {
-    return res.status(400).json({ success: false, message: error.details[0].message });
-  }
-  next();
-};
-
-module.exports = {
-  validateCreateCategory,
-  validateUpdateCategory
+export const updateCategorySchema = {
+  name: {
+    required: false,
+    minLength: 3,
+  },
+  description: {
+    required: false,
+  },
+  isActive: {
+    required: false,
+  },
 };

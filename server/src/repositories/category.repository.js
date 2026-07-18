@@ -1,33 +1,29 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient(); // Using local instance, ideally imported from a shared db/prisma module
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient(); // In a real app, import from a singleton config/db.js
 
-class CategoryRepository {
-  async create(data) {
-    return await prisma.category.create({ data });
-  }
+export const create = async (data) => {
+  return await prisma.category.create({ data });
+};
 
-  async findAll() {
-    return await prisma.category.findMany();
-  }
+export const findAll = async () => {
+  return await prisma.category.findMany();
+};
 
-  async findById(id) {
-    return await prisma.category.findUnique({ where: { id } });
-  }
+export const findById = async (id) => {
+  return await prisma.category.findUnique({ where: { id } });
+};
 
-  async update(id, data) {
-    return await prisma.category.update({
-      where: { id },
-      data
-    });
-  }
+export const update = async (id, data) => {
+  return await prisma.category.update({
+    where: { id },
+    data,
+  });
+};
 
-  async delete(id) {
-    return await prisma.category.delete({ where: { id } });
-  }
+export const remove = async (id) => {
+  return await prisma.category.delete({ where: { id } });
+};
 
-  async findByName(name) {
-    return await prisma.category.findFirst({ where: { name } });
-  }
-}
-
-module.exports = new CategoryRepository();
+export const findByName = async (name) => {
+  return await prisma.category.findFirst({ where: { name } });
+};

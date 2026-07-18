@@ -1,48 +1,37 @@
-const express = require('express');
+import express from "express";
+import * as categoryController from "../controllers/category.controller.js";
+import { validate } from "../middlewares/validate.middleware.js";
+import { createCategorySchema, updateCategorySchema } from "../validators/category.validator.js";
+import { requireAuth } from "../middlewares/auth.middleware.js";
+import { requireRoles } from "../middlewares/role.middleware.js";
+
 const router = express.Router();
-const categoryController = require('../controllers/category.controller');
-const { validateCreateCategory, validateUpdateCategory } = require('../validators/category.validator');
 
-// Note: Ensure that `authenticate` and `authorize` match the existing authentication middleware implementation
-// If they are located elsewhere, adjust the paths accordingly.
-const { authenticate, authorize } = require('../middlewares/auth.middleware');
-
-// Create a category (Admin only)
 router.post(
-  '/',
-  authenticate,
-  authorize(['ADMIN']),
-  validateCreateCategory,
+  "/",
+  requireAuth,
+  requireRoles("ADMIN"),
+  validate(createCategorySchema),
   categoryController.createCategory
 );
 
-// Get all categories (Public or authenticated as needed)
-router.get(
-  '/',
-  categoryController.getAllCategories
-);
+router.get("/", categoryController.getAllCategories);
 
-// Get category by ID
-router.get(
-  '/:id',
-  categoryController.getCategoryById
-);
+router.get("/:id", categoryController.getCategoryById);
 
-// Update a category (Admin only)
 router.put(
-  '/:id',
-  authenticate,
-  authorize(['ADMIN']),
-  validateUpdateCategory,
+  "/:id",
+  requireAuth,
+  requireRoles("ADMIN"),
+  validate(updateCategorySchema),
   categoryController.updateCategory
 );
 
-// Delete a category (Admin only)
 router.delete(
-  '/:id',
-  authenticate,
-  authorize(['ADMIN']),
+  "/:id",
+  requireAuth,
+  requireRoles("ADMIN"),
   categoryController.deleteCategory
 );
 
-module.exports = router;
+export default router;
