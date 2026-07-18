@@ -3,15 +3,8 @@ import { motion } from "framer-motion";
 import { Search, Download, CheckCircle, XCircle, Clock, RefreshCw } from "lucide-react";
 import PageHeader from "@/components/admin/shared/PageHeader";
 import StatusBadge from "@/components/admin/shared/StatusBadge";
-
-const MOCK_PAYMENTS = [
-  { id: "PAY-5021", rentalId: "R-2051", customer: "Rahul Sharma",  amount: 10500, status: "COMPLETED", method: "UPI",         date: "Jul 15, 2025", invoice: "#INV-5021" },
-  { id: "PAY-5020", rentalId: "R-2050", customer: "Priya Patel",   amount: 7500,  status: "PENDING",   method: "—",           date: "Jul 14, 2025", invoice: "#INV-5020" },
-  { id: "PAY-5019", rentalId: "R-2049", customer: "Amit Verma",    amount: 6600,  status: "COMPLETED", method: "Credit Card", date: "Jul 12, 2025", invoice: "#INV-5019" },
-  { id: "PAY-5018", rentalId: "R-2048", customer: "Sunita Joshi",  amount: 4000,  status: "FAILED",    method: "UPI",         date: "Jul 10, 2025", invoice: "#INV-5018" },
-  { id: "PAY-5017", rentalId: "R-2047", customer: "Karan Malhotra",amount: 1200,  status: "REFUNDED",  method: "Credit Card", date: "Jul 08, 2025", invoice: "#INV-5017" },
-  { id: "PAY-5016", rentalId: "R-2046", customer: "Anita Singh",   amount: 800,   status: "COMPLETED", method: "Net Banking", date: "Jul 05, 2025", invoice: "#INV-5016" },
-];
+import { getPayments, refundPayment } from "@/services/adminService";
+import { toast } from "sonner";
 
 const STATUS_ICONS = {
   COMPLETED: <CheckCircle className="w-4 h-4 text-success-500" />,
@@ -20,22 +13,75 @@ const STATUS_ICONS = {
   REFUNDED:  <RefreshCw className="w-4 h-4 text-primary-500" />,
 };
 
+const MOCK_PAYMENTS = [
+  { id: "PAY-5021", rentalId: "R-2051", customer: "Rahul Sharma",  amount: 10500, status: "COMPLETED", method: "UPI",         date: "Jul 15, 2025", invoice: "#INV-5021" },
+  { id: "PAY-5020", rentalId: "R-2050", customer: "Priya Patel",   amount: 7500,  status: "PENDING",   method: "—",           date: "Jul 14, 2025", invoice: "#INV-5020" },
+];
+
 export default function PaymentsPage() {
+  const [payments, setPayments] = useState([]);
   const [loading, setLoading]   = useState(true);
   const [search, setSearch]     = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
 
-  useEffect(() => { setTimeout(() => setLoading(false), 700); }, []);
+  const fetchPayments = async () => {
+    try {
+      setLoading(true);
+      const response = await getPayments();
+      if (response.data?.success) {
+        const dbPayments = response.data.data.map(p => ({
+          id: p.id,
+          rentalId: p.rentalOrderId,
+          customer: p.rentalOrder?.user ? `${p.rentalOrder.user.firstName} ${p.rentalOrder.user.lastName}` : "Customer",
+          amount: p.amount,
+          status: p.status,
+          method: "UPI",
+          date: new Date(p.createdAt).toLocaleDateString(),
+          invoice: `INV-${p.id.substring(0, 5).toUpperCase()}`
+        }));
+        setPayments(dbPayments);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load payments from server, using fallback");
+      setPayments(MOCK_PAYMENTS);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const filtered = MOCK_PAYMENTS.filter(p => {
-    const match = p.customer.toLowerCase().includes(search.toLowerCase()) || p.id.includes(search);
-    const matchStatus = statusFilter === "ALL" || p.status === statusFilter;
+  useEffect(() => {
+    fetchPayments();
+  }, []);
+
+  const handleRefund = async (id) => {
+    if (!window.confirm("Are you sure you want to refund this payment?")) return;
+    try {
+      const response = await refundPayment(id);
+      if (response.data?.success) {
+        toast.success("Payment refunded successfully");
+        fetchPayments();
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to refund payment");
+    }
+  };
+
+  const handlePrintInvoice = (rentalId) => {
+    const baseURL = "http://localhost:5000/api/v1";
+    window.open(`${baseURL}/payments/${rentalId}/print`, "_blank");
+  };
+
+  const filtered = payments.filter(p => {
+    const match = p.customer.toLowerCase().includes(search.toLowerCase()) || p.id.toLowerCase().includes(search.toLowerCase());
+    const matchStatus = statusFilter === "ALL" || p.status.toUpperCase() === statusFilter.toUpperCase();
     return match && matchStatus;
   });
 
-  const totalRevenue    = MOCK_PAYMENTS.filter(p => p.status === "COMPLETED").reduce((s, p) => s + p.amount, 0);
-  const pendingAmount   = MOCK_PAYMENTS.filter(p => p.status === "PENDING").reduce((s, p) => s + p.amount, 0);
-  const refundedAmount  = MOCK_PAYMENTS.filter(p => p.status === "REFUNDED").reduce((s, p) => s + p.amount, 0);
+  const totalRevenue    = payments.filter(p => p.status === "COMPLETED").reduce((s, p) => s + p.amount, 0);
+  const pendingAmount   = payments.filter(p => p.status === "PENDING").reduce((s, p) => s + p.amount, 0);
+  const refundedAmount  = payments.filter(p => p.status === "REFUNDED").reduce((s, p) => s + p.amount, 0);
 
   return (
     <div>
@@ -115,8 +161,8 @@ export default function PaymentsPage() {
                 [...Array(6)].map((_, i) => <tr key={i}>{[...Array(9)].map((_, j) => <td key={j}><div className="skeleton h-4 w-20" /></td>)}</tr>)
               ) : filtered.map((p, i) => (
                 <motion.tr key={p.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}>
-                  <td><code className="text-xs font-mono text-slate-500">{p.id}</code></td>
-                  <td><code className="text-xs font-mono text-primary-600 bg-primary-50 dark:bg-primary-900/30 px-1.5 py-0.5 rounded">{p.rentalId}</code></td>
+                  <td><code className="text-xs font-mono text-slate-500">{p.id.substring(0, 8)}</code></td>
+                  <td><code className="text-xs font-mono text-primary-600 bg-primary-50 dark:bg-primary-900/30 px-1.5 py-0.5 rounded">{p.rentalId.substring(0, 8)}</code></td>
                   <td>
                     <div className="flex items-center gap-2.5">
                       <div className="w-7 h-7 rounded-full gradient-primary flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
@@ -130,7 +176,7 @@ export default function PaymentsPage() {
                   <td className="text-sm text-slate-500 dark:text-slate-400">{p.date}</td>
                   <td>
                     <div className="flex items-center gap-1.5">
-                      {STATUS_ICONS[p.status]}
+                      {STATUS_ICONS[p.status.toUpperCase()]}
                       <StatusBadge status={p.status} />
                     </div>
                   </td>
@@ -139,11 +185,11 @@ export default function PaymentsPage() {
                   </td>
                   <td>
                     <div className="flex items-center gap-1">
-                      <button title="Download Invoice" className="p-1.5 rounded-lg text-slate-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors">
+                      <button onClick={() => handlePrintInvoice(p.rentalId)} title="Print Invoice" className="p-1.5 rounded-lg text-slate-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors">
                         <Download className="w-3.5 h-3.5" />
                       </button>
                       {p.status === "COMPLETED" && (
-                        <button title="Refund" className="p-1.5 rounded-lg text-slate-400 hover:text-warning-600 hover:bg-warning-50 dark:hover:bg-yellow-900/20 transition-colors">
+                        <button onClick={() => handleRefund(p.id)} title="Refund" className="p-1.5 rounded-lg text-slate-400 hover:text-warning-600 hover:bg-warning-50 dark:hover:bg-yellow-900/20 transition-colors">
                           <RefreshCw className="w-3.5 h-3.5" />
                         </button>
                       )}

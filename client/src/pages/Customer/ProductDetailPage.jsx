@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { productService } from "@/services/productService";
-import { RentalDialog } from "@/components/customer/RentalDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -18,7 +17,6 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showRentalDialog, setShowRentalDialog] = useState(false);
   const [selectedImage, setSelectedImage] = useState(0);
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -45,7 +43,26 @@ export default function ProductDetailPage() {
       navigate("/login", { state: { from: { pathname: `/products/${id}` } } });
       return;
     }
-    setShowRentalDialog(true);
+    
+    // Add to cart in localStorage
+    try {
+      const currentCart = JSON.parse(localStorage.getItem("rentflow_cart") || "[]");
+      const existingItemIndex = currentCart.findIndex(item => item.id === product.id);
+      
+      if (existingItemIndex !== -1) {
+        currentCart[existingItemIndex].cartQuantity = (currentCart[existingItemIndex].cartQuantity || 1) + 1;
+      } else {
+        currentCart.push({ ...product, cartQuantity: 1 });
+      }
+      
+      localStorage.setItem("rentflow_cart", JSON.stringify(currentCart));
+      window.dispatchEvent(new Event("cart-updated"));
+    } catch (e) {
+      console.error("Failed to add to cart", e);
+    }
+    
+    // Navigate to the improved checkout funnel
+    navigate("/cart");
   };
 
   if (loading) return <PageLoader />;
@@ -173,20 +190,11 @@ export default function ProductDetailPage() {
               onClick={handleRentClick}
             >
               <ShoppingCart className="h-5 w-5" />
-              {isAvailable ? "Rent Now" : "Out of Stock"}
+              {isAvailable ? "Add to Cart" : "Out of Stock"}
             </Button>
           </div>
         </div>
       </div>
-
-      {/* Rental Dialog */}
-      {showRentalDialog && (
-        <RentalDialog
-          product={product}
-          open={showRentalDialog}
-          onClose={() => setShowRentalDialog(false)}
-        />
-      )}
     </div>
   );
 }

@@ -3,7 +3,7 @@ import ApiResponse from "../utils/ApiResponse.js";
 
 export const createProduct = async (req, res, next) => {
   try {
-    const product = await productService.createProduct(req.body);
+    const product = await productService.createProduct(req.body, req.user);
     return res.status(201).json(new ApiResponse(201, product, "Product created successfully"));
   } catch (error) {
     next(error);
@@ -34,7 +34,7 @@ export const getProductById = async (req, res, next) => {
 export const updateProduct = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const product = await productService.updateProduct(id, req.body);
+    const product = await productService.updateProduct(id, req.body, req.user);
     return res.status(200).json(new ApiResponse(200, product, "Product updated successfully"));
   } catch (error) {
     next(error);
@@ -44,7 +44,7 @@ export const updateProduct = async (req, res, next) => {
 export const deleteProduct = async (req, res, next) => {
   try {
     const { id } = req.params;
-    await productService.deleteProduct(id);
+    await productService.deleteProduct(id, req.user);
     return res.status(200).json(new ApiResponse(200, null, "Product deleted successfully"));
   } catch (error) {
     next(error);
@@ -55,7 +55,7 @@ export const toggleAvailability = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { isAvailable } = req.body;
-    const product = await productService.toggleProductAvailability(id, isAvailable);
+    const product = await productService.toggleProductAvailability(id, isAvailable, req.user);
     return res.status(200).json(new ApiResponse(200, product, "Product availability updated"));
   } catch (error) {
     next(error);

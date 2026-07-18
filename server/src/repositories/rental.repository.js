@@ -23,16 +23,29 @@ export const createRentalOrder = async (data) => {
       }
     });
 
-    // 2. Decrement stock for each product
-    for (const item of data.items) {
-      await tx.product.update({
-        where: { id: item.productId },
+    // 2. Create Security Deposit record if deposit amount exists
+    if (data.depositAmount && data.depositAmount > 0) {
+      await tx.securityDeposit.create({
         data: {
-          stockQuantity: {
-            decrement: item.quantity
-          }
+          rentalOrderId: order.id,
+          amount: data.depositAmount,
+          isRefunded: false
         }
       });
+    }
+
+    // 3. Decrement stock for non-service products
+    for (const item of data.items) {
+      if (!item.isService) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: {
+            stockQuantity: {
+              decrement: item.quantity
+            }
+          }
+        });
+      }
     }
 
     return order;

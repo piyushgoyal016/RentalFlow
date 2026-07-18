@@ -28,4 +28,18 @@ router.get(
   lateFeeController.getLateFees
 );
 
+router.get(
+  "/global/settings",
+  requireAuth,
+  requireRoles("ADMIN", "MANAGER"),
+  lateFeeController.getSettings
+);
+
+router.put(
+  "/global/settings",
+  requireAuth,
+  requireRoles("ADMIN"),
+  lateFeeController.updateSettings
+);
+
 export default router;

@@ -200,6 +200,15 @@ export default function RegisterPage() {
               Sign in
             </Link>
           </p>
+
+          <div className="mt-6 border-t border-slate-100 dark:border-slate-800 pt-6 text-center">
+            <p className="text-sm text-slate-500">
+              Are you a business looking to rent out your products?
+            </p>
+            <Link to="/vendor-register" className="mt-2 inline-block font-semibold text-fuchsia-600 hover:text-fuchsia-700">
+              Register as a Vendor &rarr;
+            </Link>
+          </div>
         </div>
       </div>
     </div>

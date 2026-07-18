@@ -12,5 +12,5 @@ export const createRentalSchema = z.object({
 });
 
 export const updateStatusSchema = z.object({
-  status: z.enum(["PENDING", "ACTIVE", "COMPLETED", "OVERDUE", "CANCELLED"])
+  status: z.enum(["PENDING", "ACTIVE", "COMPLETED", "OVERDUE", "CANCELLED", "RESERVED", "BOOKED", "PICKED_UP"])
 });

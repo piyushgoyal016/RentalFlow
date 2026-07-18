@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/context/AuthContext";
+import { profileService } from "@/services/profileService";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -14,19 +15,31 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getInitials, formatDate, formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
-import { User, Mail, Phone, MapPin, Calendar, Save, Shield } from "lucide-react";
+import { User, Mail, Phone, MapPin, Calendar, Save, Shield, Key } from "lucide-react";
 import { rentals } from "@/data/mockData";
 
 const profileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email"),
   phone: z.string().optional(),
-  address: z.string().optional(),
+  companyName: z.string().optional(),
+  companyLogo: z.string().optional(),
+  gstNo: z.string().optional(),
+});
+
+const passwordSchema = z.object({
+  oldPassword: z.string().min(6, "Password must be at least 6 characters"),
+  newPassword: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
 });
 
 export default function ProfilePage() {
   const { user, updateProfile } = useAuth();
   const [saving, setSaving] = useState(false);
+  const [passwordSaving, setPasswordSaving] = useState(false);
 
   const {
     register,
@@ -38,8 +51,19 @@ export default function ProfilePage() {
       name: user?.name || "",
       email: user?.email || "",
       phone: user?.phone || "",
-      address: user?.address || "",
+      companyName: user?.companyName || "",
+      companyLogo: user?.companyLogo || "",
+      gstNo: user?.gstNo || "",
     },
+  });
+
+  const {
+    register: registerPassword,
+    handleSubmit: handleSubmitPassword,
+    reset: resetPassword,
+    formState: { errors: passwordErrors },
+  } = useForm({
+    resolver: zodResolver(passwordSchema),
   });
 
   const onSubmit = async (data) => {
@@ -51,6 +75,19 @@ export default function ProfilePage() {
       toast.error("Update failed", { description: error.message });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const onSubmitPassword = async (data) => {
+    setPasswordSaving(true);
+    try {
+      await profileService.changePassword(data.oldPassword, data.newPassword);
+      toast.success("Password updated!", { description: "Your password has been changed." });
+      resetPassword();
+    } catch (error) {
+      toast.error("Change failed", { description: error.message });
+    } finally {
+      setPasswordSaving(false);
     }
   };
 
@@ -78,7 +115,7 @@ export default function ProfilePage() {
             <h1 className="text-2xl font-bold text-slate-900">{user?.name}</h1>
             <p className="text-slate-500">{user?.email}</p>
             <div className="flex items-center gap-2 mt-2">
-              <Badge variant="default">Customer</Badge>
+              <Badge variant="default">{user?.role}</Badge>
               <span className="text-xs text-slate-400">
                 Joined {formatDate(user?.joinedAt)}
               </span>
@@ -89,6 +126,7 @@ export default function ProfilePage() {
         <Tabs defaultValue="profile">
           <TabsList className="w-full sm:w-auto">
             <TabsTrigger value="profile">Edit Profile</TabsTrigger>
+            <TabsTrigger value="security">Security</TabsTrigger>
             <TabsTrigger value="history">Rental History</TabsTrigger>
             <TabsTrigger value="deposits">Security Deposits</TabsTrigger>
           </TabsList>
@@ -125,19 +163,78 @@ export default function ProfilePage() {
                         <Input id="phone" className="pl-10" {...register("phone")} />
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="address">Address</Label>
-                      <div className="relative">
-                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                        <Input id="address" className="pl-10" {...register("address")} />
-                      </div>
-                    </div>
                   </div>
+
+                  {(user?.role === "VENDOR" || user?.role === "ADMIN") && (
+                    <>
+                      <Separator />
+                      <CardTitle className="text-lg mt-4">Company Details (Vendor)</CardTitle>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div className="space-y-2">
+                          <Label htmlFor="companyName">Company Name</Label>
+                          <Input id="companyName" {...register("companyName")} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="companyLogo">Company Logo URL</Label>
+                          <Input id="companyLogo" {...register("companyLogo")} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="gstNo">GSTIN / Tax No</Label>
+                          <Input id="gstNo" {...register("gstNo")} />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
                   <Separator />
                   <div className="flex justify-end">
                     <Button type="submit" disabled={!isDirty || saving}>
-                      <Save className="h-4 w-4" />
+                      <Save className="h-4 w-4 mr-2" />
                       {saving ? "Saving..." : "Save Changes"}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Security */}
+          <TabsContent value="security">
+            <Card>
+              <CardHeader>
+                <CardTitle>Change Password</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSubmitPassword(onSubmitPassword)} className="space-y-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="oldPassword">Current Password</Label>
+                    <div className="relative">
+                      <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input id="oldPassword" type="password" className="pl-10" {...registerPassword("oldPassword")} />
+                    </div>
+                    {passwordErrors.oldPassword && <p className="text-sm text-danger-600">{passwordErrors.oldPassword.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">New Password</Label>
+                    <div className="relative">
+                      <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input id="newPassword" type="password" className="pl-10" {...registerPassword("newPassword")} />
+                    </div>
+                    {passwordErrors.newPassword && <p className="text-sm text-danger-600">{passwordErrors.newPassword.message}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                    <div className="relative">
+                      <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input id="confirmPassword" type="password" className="pl-10" {...registerPassword("confirmPassword")} />
+                    </div>
+                    {passwordErrors.confirmPassword && <p className="text-sm text-danger-600">{passwordErrors.confirmPassword.message}</p>}
+                  </div>
+                  <Separator />
+                  <div className="flex justify-end">
+                    <Button type="submit" disabled={passwordSaving}>
+                      <Shield className="h-4 w-4 mr-2" />
+                      {passwordSaving ? "Changing..." : "Change Password"}
                     </Button>
                   </div>
                 </form>

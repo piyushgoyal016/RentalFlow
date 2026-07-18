@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import PageHeader from "@/components/admin/shared/PageHeader";
 import StatusBadge from "@/components/admin/shared/StatusBadge";
+import { getRentals, updateRentalStatus } from "@/services/adminService";
+import { toast } from "sonner";
 
 const MOCK_RENTALS = [
   { id: "R-2051", customer: "Rahul Sharma",  products: ["Canon EOS R5"],        status: "ACTIVE",    pickupDate: "Jul 15, 2025", returnDate: "Jul 22, 2025", totalCost: 10500, deposit: 25000 },
@@ -328,17 +330,63 @@ function RentalWizard({ onClose }) {
 }
 
 export default function RentalsPage() {
-  const [rentals, setRentals] = useState(MOCK_RENTALS);
+  const [rentals, setRentals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch]   = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [showWizard, setShowWizard]     = useState(false);
 
-  useEffect(() => { setTimeout(() => setLoading(false), 700); }, []);
+  const fetchRentals = async () => {
+    try {
+      setLoading(true);
+      const response = await getRentals();
+      if (response.data?.success) {
+        const dbRentals = response.data.data.map(r => ({
+          id: r.id,
+          customer: r.user ? `${r.user.firstName} ${r.user.lastName}` : "Customer",
+          products: r.items?.map(item => item.product?.name || "Product") || [],
+          pickupDate: new Date(r.pickupDate).toLocaleDateString(),
+          returnDate: new Date(r.returnDate).toLocaleDateString(),
+          totalCost: r.totalCost,
+          deposit: r.depositAmount || 0,
+          status: r.status,
+        }));
+        setRentals(dbRentals);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to fetch rentals from server, using fallback");
+      setRentals(MOCK_RENTALS);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRentals();
+  }, []);
+
+  const handleStatusChange = async (id, newStatus) => {
+    try {
+      const response = await updateRentalStatus(id, newStatus);
+      if (response.data?.success) {
+        toast.success(`Status updated to ${newStatus}`);
+        fetchRentals();
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to update status");
+    }
+  };
+
+  const handlePrintInvoice = (id) => {
+    const baseURL = "http://localhost:5000/api/v1";
+    window.open(`${baseURL}/payments/${id}/print`, "_blank");
+  };
 
   const filtered = rentals.filter(r => {
-    const match = r.customer.toLowerCase().includes(search.toLowerCase()) || r.id.includes(search);
-    const matchStatus = statusFilter === "ALL" || r.status === statusFilter;
+    const match = r.customer.toLowerCase().includes(search.toLowerCase()) || r.id.toLowerCase().includes(search.toLowerCase());
+    const matchStatus = statusFilter === "ALL" || r.status.toUpperCase() === statusFilter.toUpperCase();
     return match && matchStatus;
   });
 
@@ -400,12 +448,13 @@ export default function RentalsPage() {
                 <th>Total</th>
                 <th>Deposit</th>
                 <th>Status</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 [...Array(6)].map((_, i) => (
-                  <tr key={i}>{[...Array(8)].map((_, j) => <td key={j}><div className="skeleton h-4 w-20" /></td>)}</tr>
+                  <tr key={i}>{[...Array(9)].map((_, j) => <td key={j}><div className="skeleton h-4 w-20" /></td>)}</tr>
                 ))
               ) : filtered.map((r, i) => (
                 <motion.tr key={r.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}>
@@ -430,6 +479,30 @@ export default function RentalsPage() {
                   <td className="font-semibold text-slate-900 dark:text-white">₹{r.totalCost.toLocaleString()}</td>
                   <td className="text-sm text-warning-600">₹{r.deposit.toLocaleString()}</td>
                   <td><StatusBadge status={r.status} /></td>
+                  <td>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={r.status}
+                        onChange={(e) => handleStatusChange(r.id, e.target.value)}
+                        className="text-xs px-2 py-1.5 rounded-lg border border-slate-200 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      >
+                        <option value="PENDING">Pending</option>
+                        <option value="RESERVED">Reserved</option>
+                        <option value="BOOKED">Booked</option>
+                        <option value="PICKED_UP">Picked Up</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="OVERDUE">Overdue</option>
+                        <option value="CANCELLED">Cancelled</option>
+                      </select>
+                      <button
+                        onClick={() => handlePrintInvoice(r.id)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors flex items-center justify-center"
+                        title="Print Invoice"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </td>
                 </motion.tr>
               ))}
             </tbody>

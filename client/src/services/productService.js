@@ -6,20 +6,24 @@ export const productService = {
     try {
       const response = await api.get("/products");
       let list = [];
+      const rawList = response.data.data?.data || (Array.isArray(response.data.data) ? response.data.data : []);
 
-      if (response.data?.success && response.data.data.length > 0) {
-        list = response.data.data.map(p => ({
-          id: p.id,
-          name: p.name,
-          category: p.category?.name || "Uncategorized",
-          categoryId: p.categoryId,
-          description: p.description || "",
-          dailyRate: p.rentalPricePerDay,
-          securityDeposit: p.depositAmount,
-          availableQuantity: p.stockQuantity,
-          image: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=300&q=80",
-          rating: 4.8,
-        }));
+      if (response.data?.success && rawList.length > 0) {
+        list = rawList
+          .filter(p => p.category?.name !== "Services" && p.name !== "Late Fees" && p.name !== "Security Deposit")
+          .map(p => ({
+            id: p.id,
+            name: p.name,
+            category: p.category?.name || "Uncategorized",
+            categoryId: p.categoryId,
+            description: p.description || "",
+            dailyRate: p.rentalPricePerDay,
+            securityDeposit: p.depositAmount,
+            availableQuantity: p.stockQuantity,
+            image: p.variants?.[0]?.imageUrl || p.images?.[0]?.url || "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=300&q=80",
+            rating: 4.8,
+            brand: p.brand || (p.vendor ? p.vendor.companyName : "RentFlow"),
+          }));
       } else {
         // Fallback to mock products if database is empty (so the UI looks premium)
         list = mockProducts.map(p => ({
@@ -98,7 +102,7 @@ export const productService = {
           dailyRate: p.rentalPricePerDay,
           securityDeposit: p.depositAmount,
           availableQuantity: p.stockQuantity,
-          image: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=300&q=80",
+          image: p.variants?.[0]?.imageUrl || p.images?.[0]?.url || "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=300&q=80",
           rating: 4.8,
         };
       }
@@ -129,7 +133,8 @@ export const productService = {
         const cat = response.data.data.find(c => c.name.toLowerCase() === slug.toLowerCase() || c.id === slug);
         if (cat) {
           const resProd = await api.get("/products");
-          const catProducts = resProd.data.data.filter(p => p.categoryId === cat.id);
+          const rawList = resProd.data.data?.data || (Array.isArray(resProd.data.data) ? resProd.data.data : []);
+          const catProducts = rawList.filter(p => p.categoryId === cat.id);
           return { category: cat, products: catProducts };
         }
       }

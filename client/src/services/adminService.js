@@ -52,7 +52,7 @@ export const markLateFee  = (id)     => api.patch(`/late-fees/${id}/paid`);
 
 // ─── Reports ──────────────────────────────────────────────────────────────────
 export const getRevenue        = (params) => api.get("/reports/revenue",   { params });
-export const getInventoryReport = (params) => api.get("/reports/inventory", { params });
+export const getInventoryReport = (params) => api.get("/reports/products", { params });
 export const getCustomerReport  = (params) => api.get("/reports/customers", { params });
 export const getRentalReport    = (params) => api.get("/reports/rentals",   { params });
 export const getLateReturns     = (params) => api.get("/reports/late-returns", { params });

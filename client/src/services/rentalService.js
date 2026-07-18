@@ -7,24 +7,42 @@ export const rentalService = {
       const response = await api.get("/rentals/my");
       if (response.data?.success && response.data.data.length > 0) {
         // Map database response to view model format
-        return response.data.data.map(r => ({
+        let list = response.data.data.map(r => ({
           id: r.id,
           product: {
             id: r.items?.[0]?.product?.id,
             name: r.items?.[0]?.product?.name || "Product",
-            image: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=300&q=80",
+            image: r.items?.[0]?.product?.variants?.[0]?.imageUrl || r.items?.[0]?.product?.images?.[0]?.url || "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=300&q=80",
             dailyRate: r.items?.[0]?.pricePerDay || r.totalCost,
-            securityDeposit: r.deposit?.amount || 0,
+            securityDeposit: r.depositAmount || 0,
           },
           startDate: r.pickupDate,
           endDate: r.returnDate,
           duration: Math.ceil((new Date(r.returnDate) - new Date(r.pickupDate)) / (1000 * 60 * 60 * 24)) || 1,
           totalAmount: r.totalCost,
-          securityDeposit: r.deposit?.amount || 0,
+          securityDeposit: r.depositAmount || 0,
           status: r.status.toLowerCase(),
           paymentStatus: r.payment?.status?.toLowerCase() || "pending",
           createdAt: r.createdAt,
         }));
+
+        // Apply status filter on the loaded database list
+        if (filters.status && filters.status !== "all") {
+          const fs = filters.status.toLowerCase();
+          if (fs === "active" || fs === "confirmed") {
+            // Group all active/ongoing states
+            list = list.filter(r => 
+              r.status === "active" || 
+              r.status === "confirmed" || 
+              r.status === "reserved" || 
+              r.status === "booked" || 
+              r.status === "picked_up"
+            );
+          } else {
+            list = list.filter(r => r.status === fs);
+          }
+        }
+        return list;
       }
     } catch (err) {
       console.warn("Backend getMyRentals failed, using fallback:", err);
@@ -33,7 +51,18 @@ export const rentalService = {
     // Fallback to mock rentals (so the dashboard is populated and premium for jury member)
     let filtered = [...mockRentals];
     if (filters.status && filters.status !== "all") {
-      filtered = filtered.filter((r) => r.status === filters.status);
+      const fs = filters.status.toLowerCase();
+      if (fs === "active" || fs === "confirmed") {
+        filtered = filtered.filter(r => 
+          r.status === "active" || 
+          r.status === "confirmed" || 
+          r.status === "reserved" || 
+          r.status === "booked" || 
+          r.status === "picked_up"
+        );
+      } else {
+        filtered = filtered.filter(r => r.status === fs);
+      }
     }
     filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     return filtered;
@@ -49,15 +78,15 @@ export const rentalService = {
           product: {
             id: r.items?.[0]?.product?.id,
             name: r.items?.[0]?.product?.name || "Product",
-            image: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=300&q=80",
+            image: r.items?.[0]?.product?.variants?.[0]?.imageUrl || r.items?.[0]?.product?.images?.[0]?.url || "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=300&q=80",
             dailyRate: r.items?.[0]?.pricePerDay || r.totalCost,
-            securityDeposit: r.deposit?.amount || 0,
+            securityDeposit: r.depositAmount || 0,
           },
           startDate: r.pickupDate,
           endDate: r.returnDate,
           duration: Math.ceil((new Date(r.returnDate) - new Date(r.pickupDate)) / (1000 * 60 * 60 * 24)) || 1,
           totalAmount: r.totalCost,
-          securityDeposit: r.deposit?.amount || 0,
+          securityDeposit: r.depositAmount || 0,
           status: r.status.toLowerCase(),
           paymentStatus: r.payment?.status?.toLowerCase() || "pending",
           createdAt: r.createdAt,
@@ -116,3 +145,4 @@ export const rentalService = {
     return rental;
   },
 };
+export default rentalService;

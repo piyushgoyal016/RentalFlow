@@ -41,6 +41,8 @@ export const createUser = async (userData) => {
       email: userData.email,
       password: userData.password,
       phone: userData.phone || null,
+      companyName: userData.companyName || null,
+      gstNo: userData.gstNo || null,
       roleId: userData.roleId,
     },
     include: {

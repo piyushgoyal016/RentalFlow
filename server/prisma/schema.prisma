@@ -16,6 +16,9 @@ enum RentalStatus {
   COMPLETED
   OVERDUE
   CANCELLED
+  RESERVED
+  BOOKED
+  PICKED_UP
 }
 
 enum PaymentStatus {
@@ -53,6 +56,11 @@ model User {
   isActive  Boolean   @default(true)
   deletedAt DateTime?
 
+  // Vendor Details
+  companyName String?
+  companyLogo String?
+  gstNo       String?
+
   roleId String
   role   Role   @relation(fields: [roleId], references: [id], onDelete: Restrict)
 
@@ -62,6 +70,7 @@ model User {
   reviews       Review[]
   cart          Cart?
   auditLogs     AuditLog[]
+  products      Product[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -106,7 +115,8 @@ model Category {
   isActive    Boolean   @default(true)
   deletedAt   DateTime?
 
-  products Product[]
+  products       Product[]
+  pricelistRules PricelistRule[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -117,26 +127,37 @@ model Product {
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
 
+  vendorId String?
+  vendor   User?   @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+
   name              String
   description       String?
   barcode           String?   @unique
   qrCode            String?   @unique
   isAvailable       Boolean   @default(true)
+  isPublished       Boolean   @default(false)
   rentalPricePerDay Float
   depositAmount     Float
   stockQuantity     Int       @default(1)
   deletedAt         DateTime?
 
-  images      ProductImage[]
-  variants    ProductVariant[]
-  rentalItems RentalItem[]
-  reviews     Review[]
-  cartItems   CartItem[]
+  // Late Fee Settings
+  lateFeeEnabled Boolean @default(true)
+  lateFeeRate    Float?
+  paddingTime    Int     @default(0) // buffer time in minutes
+
+  images         ProductImage[]
+  variants       ProductVariant[]
+  rentalItems    RentalItem[]
+  reviews        Review[]
+  cartItems      CartItem[]
+  pricelistRules PricelistRule[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([categoryId])
+  @@index([vendorId])
 }
 
 model ProductImage {
@@ -155,6 +176,7 @@ model ProductVariant {
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   name      String
   value     String
+  imageUrl  String?
 
   @@index([productId])
 }
@@ -336,4 +358,54 @@ model AuditLog {
 
   @@index([userId])
   @@index([entity, entityId])
+}
+
+// ---------------------------------------------------------------------------
+// PRICELIST & RATE CONFIGURATION
+// ---------------------------------------------------------------------------
+model Pricelist {
+  id          String          @id @default(uuid())
+  name        String
+  description String?
+  isActive    Boolean         @default(true)
+  rules       PricelistRule[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model PricelistRule {
+  id          String    @id @default(uuid())
+  pricelistId String
+  pricelist   Pricelist @relation(fields: [pricelistId], references: [id], onDelete: Cascade)
+
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  minQty      Int    @default(1)
+  periodicity String // HOURLY, DAILY, WEEKLY, MONTHLY, NIGHTLY
+  priceType   String // FIXED, RANGE
+  fixedPrice  Float?
+  minPrice    Float?
+  maxPrice    Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([pricelistId])
+  @@index([productId])
+  @@index([categoryId])
+}
+
+// ---------------------------------------------------------------------------
+// GLOBAL CONFIGURATION
+// ---------------------------------------------------------------------------
+model GlobalSettings {
+  id                 String   @id @default(uuid())
+  lateFeeEnabled     Boolean  @default(true)
+  defaultLateFeeRate Float    @default(15.0) // default per hour late
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 }

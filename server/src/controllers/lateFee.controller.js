@@ -29,3 +29,21 @@ export const getLateFees = async (req, res, next) => {
     next(error);
   }
 };
+
+export const getSettings = async (req, res, next) => {
+  try {
+    const settings = await lateFeeService.getGlobalSettings();
+    return res.status(200).json(new ApiResponse(200, settings, "Settings fetched successfully"));
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateSettings = async (req, res, next) => {
+  try {
+    const settings = await lateFeeService.updateGlobalSettings(req.body);
+    return res.status(200).json(new ApiResponse(200, settings, "Settings updated successfully"));
+  } catch (error) {
+    next(error);
+  }
+};

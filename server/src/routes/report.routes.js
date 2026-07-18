@@ -5,7 +5,7 @@ import { requireRoles } from "../middlewares/role.middleware.js";
 
 const router = express.Router();
 
-router.use(requireAuth, requireRoles("ADMIN", "MANAGER"));
+router.use(requireAuth, requireRoles("ADMIN", "MANAGER", "VENDOR"));
 
 router.get("/revenue", reportController.getRevenueReport);
 router.get("/rentals", reportController.getRentalReport);

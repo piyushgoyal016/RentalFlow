@@ -19,7 +19,7 @@ router.get("/my", requireAuth, rentalController.getMyRentals);
 router.get(
   "/",
   requireAuth,
-  requireRoles("ADMIN", "MANAGER"),
+  requireRoles("ADMIN", "MANAGER", "VENDOR"),
   rentalController.getAllRentals
 );
 
@@ -28,7 +28,7 @@ router.get("/:id", requireAuth, rentalController.getRentalById);
 router.patch(
   "/:id/status",
   requireAuth,
-  requireRoles("ADMIN", "MANAGER"),
+  requireRoles("ADMIN", "MANAGER", "VENDOR"),
   validate(updateStatusSchema),
   rentalController.updateRentalStatus
 );

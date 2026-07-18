@@ -6,11 +6,16 @@ export const create = async (data) => {
       name: data.name,
       description: data.description,
       categoryId: data.categoryId,
+      vendorId: data.vendorId || null,
       barcode: data.barcode,
       qrCode: data.qrCode,
       rentalPricePerDay: data.rentalPricePerDay,
       depositAmount: data.depositAmount,
       stockQuantity: data.stockQuantity,
+      isPublished: data.isPublished || false,
+      lateFeeEnabled: data.lateFeeEnabled !== undefined ? data.lateFeeEnabled : true,
+      lateFeeRate: data.lateFeeRate || null,
+      paddingTime: data.paddingTime || 0,
       images: {
         create: data.images || []
       },
@@ -21,7 +26,8 @@ export const create = async (data) => {
     include: {
       images: true,
       variants: true,
-      category: true
+      category: true,
+      vendor: true
     }
   });
 };
@@ -34,7 +40,8 @@ export const findAll = async (skip = 0, take = 10) => {
       include: {
         images: true,
         variants: true,
-        category: true
+        category: true,
+        vendor: true
       },
       orderBy: { createdAt: 'desc' }
     }),
@@ -50,7 +57,8 @@ export const findById = async (id) => {
     include: {
       images: true,
       variants: true,
-      category: true
+      category: true,
+      vendor: true
     }
   });
 };

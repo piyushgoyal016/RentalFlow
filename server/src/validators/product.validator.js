@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+const variantSchema = z.object({
+  name: z.string(),
+  value: z.string(),
+  imageUrl: z.string().optional(),
+});
+
 export const createProductSchema = z.object({
   name: z.string().min(3),
   categoryId: z.string().uuid(),
@@ -9,6 +15,11 @@ export const createProductSchema = z.object({
   description: z.string().optional(),
   barcode: z.string().optional(),
   qrCode: z.string().optional(),
+  isPublished: z.boolean().optional(),
+  lateFeeEnabled: z.boolean().optional(),
+  lateFeeRate: z.number().optional(),
+  paddingTime: z.number().int().optional(),
+  variants: z.array(variantSchema).optional(),
 });
 
 export const updateProductSchema = z.object({
@@ -16,6 +27,10 @@ export const updateProductSchema = z.object({
   rentalPricePerDay: z.number().positive().optional(),
   depositAmount: z.number().nonnegative().optional(),
   isAvailable: z.boolean().optional(),
+  isPublished: z.boolean().optional(),
   stockQuantity: z.number().int().nonnegative().optional(),
   description: z.string().optional(),
+  lateFeeEnabled: z.boolean().optional(),
+  lateFeeRate: z.number().optional(),
+  paddingTime: z.number().int().optional(),
 });

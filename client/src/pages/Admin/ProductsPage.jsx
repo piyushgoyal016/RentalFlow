@@ -8,6 +8,7 @@ import PageHeader from "@/components/admin/shared/PageHeader";
 import StatusBadge from "@/components/admin/shared/StatusBadge";
 import { getProducts, getCategories, createProduct, updateProduct, deleteProduct } from "@/services/adminService";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
 // ─── Product Details Drawer ───────────────────────────────────────────────────
 function ProductDrawer({ product, onClose, onEdit, onDelete }) {
@@ -90,7 +91,7 @@ function ProductDrawer({ product, onClose, onEdit, onDelete }) {
 }
 
 // ─── Product Edit / Create Modal ───────────────────────────────────────────────
-function ProductModal({ product, categories, onClose, onSave }) {
+function ProductModal({ product, categories, onClose, onSave, user }) {
   const [name, setName] = useState(product?.name || "");
   const [categoryId, setCategoryId] = useState(product?.categoryId || "");
   const [desc, setDesc] = useState(product?.description || "");
@@ -98,12 +99,16 @@ function ProductModal({ product, categories, onClose, onSave }) {
   const [deposit, setDeposit] = useState(product?.depositAmount || "");
   const [stock, setStock] = useState(product?.stockQuantity || "1");
   const [barcode, setBarcode] = useState(product?.barcode || "");
+  const [isPublished, setIsPublished] = useState(product?.isPublished || false);
+  const [lateFeeEnabled, setLateFeeEnabled] = useState(product?.lateFeeEnabled !== undefined ? product.lateFeeEnabled : true);
+  const [lateFeeRate, setLateFeeRate] = useState(product?.lateFeeRate || "");
+  const [paddingTime, setPaddingTime] = useState(product?.paddingTime || "0");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim() || !categoryId || !price || !deposit) {
-      toast.error("Please fill in all required fields");
+      toast.toast ? toast.toast("Please fill in all required fields") : toast.error("Please fill in all required fields");
       return;
     }
     setLoading(true);
@@ -117,6 +122,10 @@ function ProductModal({ product, categories, onClose, onSave }) {
         stockQuantity: parseInt(stock),
         barcode: barcode || null,
         qrCode: barcode ? `QR-${barcode}` : null,
+        isPublished,
+        lateFeeEnabled,
+        lateFeeRate: lateFeeRate ? parseFloat(lateFeeRate) : null,
+        paddingTime: parseInt(paddingTime) || 0,
       });
     } catch (err) {
       console.error(err);
@@ -177,7 +186,37 @@ function ProductModal({ product, categories, onClose, onSave }) {
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
-            <div className="col-span-2">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Padding Buffer (Minutes)</label>
+              <input type="number" min="0" value={paddingTime} onChange={e => setPaddingTime(e.target.value)} placeholder="120"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            <div className="flex items-center gap-4 mt-6">
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+                <input type="checkbox" checked={isPublished} onChange={e => setIsPublished(e.target.checked)} disabled={user?.role !== "ADMIN"}
+                  className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                />
+                Published (Admin only)
+              </label>
+            </div>
+            <div className="col-span-2 border-t pt-4">
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                <input type="checkbox" checked={lateFeeEnabled} onChange={e => setLateFeeEnabled(e.target.checked)}
+                  className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                />
+                Apply Late Overdue Penalty
+              </label>
+              {lateFeeEnabled && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Product Custom Late Fee Rate (₹/Hour)</label>
+                  <input type="number" min="0" value={lateFeeRate} onChange={e => setLateFeeRate(e.target.value)} placeholder="Falls back to global rate (₹150/hr)"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+              )}
+            </div>
+            <div className="col-span-2 border-t pt-4">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">Barcode / Serial Number</label>
               <input value={barcode} onChange={e => setBarcode(e.target.value)} placeholder="e.g. SN-A74-009"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -211,6 +250,7 @@ function ProductModal({ product, categories, onClose, onSave }) {
 
 // ─── Products Page ─────────────────────────────────────────────────────────────
 export default function ProductsPage() {
+  const { user } = useAuth();
   const [products, setProducts]   = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading]     = useState(true);
@@ -227,21 +267,24 @@ export default function ProductsPage() {
       const resCats = await getCategories();
 
       if (resProducts.data?.success) {
-        const dbProducts = resProducts.data.data.map(p => ({
-          id: p.id,
-          name: p.name,
-          category: p.category?.name || "Uncategorized",
-          categoryId: p.categoryId,
-          description: p.description || "",
-          rentalPricePerDay: p.rentalPricePerDay,
-          depositAmount: p.depositAmount,
-          stockQuantity: p.stockQuantity,
-          isAvailable: p.isAvailable,
-          barcode: p.barcode || "",
-          qrCode: p.qrCode || "",
-          rating: 4.8,
-          image: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=300&q=80",
-        }));
+        const rawList = resProducts.data.data?.data || (Array.isArray(resProducts.data.data) ? resProducts.data.data : []);
+        const dbProducts = rawList
+          .filter(p => p.category?.name !== "Services" && p.name !== "Late Fees" && p.name !== "Security Deposit")
+          .map(p => ({
+            id: p.id,
+            name: p.name,
+            category: p.category?.name || "Uncategorized",
+            categoryId: p.categoryId,
+            description: p.description || "",
+            rentalPricePerDay: p.rentalPricePerDay,
+            depositAmount: p.depositAmount,
+            stockQuantity: p.stockQuantity,
+            isAvailable: p.isAvailable,
+            barcode: p.barcode || "",
+            qrCode: p.qrCode || "",
+            rating: 4.8,
+            image: p.variants?.[0]?.imageUrl || p.images?.[0]?.url || "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=300&q=80",
+          }));
         setProducts(dbProducts);
       }
 
@@ -516,6 +559,7 @@ export default function ProductsPage() {
             categories={categories}
             onClose={() => setModal(null)}
             onSave={handleSave}
+            user={user}
           />
         )}
       </AnimatePresence>

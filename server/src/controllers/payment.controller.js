@@ -41,3 +41,23 @@ export const refundPayment = async (req, res, next) => {
     next(error);
   }
 };
+
+export const printInvoice = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const html = await paymentService.getInvoiceHtml(id);
+    res.setHeader("Content-Type", "text/html");
+    return res.status(200).send(html);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getPayments = async (req, res, next) => {
+  try {
+    const payments = await paymentService.getAllPayments();
+    return res.status(200).json(new ApiResponse(200, payments, "Payments fetched successfully"));
+  } catch (error) {
+    next(error);
+  }
+};

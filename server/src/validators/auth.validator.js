@@ -6,6 +6,10 @@ export const registerSchema = z.object({
   firstName: z.string().min(2, { message: "First name must be at least 2 characters long" }),
   lastName: z.string().min(2, { message: "Last name must be at least 2 characters long" }),
   phone: z.string().regex(/^\+?[1-9]\d{1,14}$/, { message: "Must be a valid E.164 phone number" }).optional(),
+  companyName: z.string().optional(),
+  gstNo: z.string().optional(),
+  productCategory: z.string().optional(),
+  roleName: z.string().optional(),
 });
 
 export const loginSchema = z.object({

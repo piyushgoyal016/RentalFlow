@@ -42,7 +42,7 @@ export const authService = {
   },
 
   async register(data) {
-    const { name, email, password, phone, roleName = "CUSTOMER" } = data;
+    const { name, email, password, phone, roleName = "CUSTOMER", companyName, gstNo, productCategory } = data;
 
     if (!email || !password) {
       throw new Error("Email and password are required");
@@ -50,8 +50,8 @@ export const authService = {
 
     // Split name into first and last name
     const nameParts = (name || "").trim().split(" ");
-    const firstName = nameParts[0] || "User";
-    const lastName = nameParts.slice(1).join(" ") || "Member";
+    const firstName = data.firstName || nameParts[0] || "User";
+    const lastName = data.lastName || nameParts.slice(1).join(" ") || "Member";
 
     try {
       const response = await api.post("/auth/register", {
@@ -60,6 +60,9 @@ export const authService = {
         email,
         password,
         phone: phone || "",
+        companyName,
+        gstNo,
+        productCategory,
         roleName: roleName.toUpperCase(),
       });
 

@@ -1,128 +1,100 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Download, FileText, BarChart2, Users, Package, AlertTriangle } from "lucide-react";
 import PageHeader from "@/components/admin/shared/PageHeader";
 import StatusBadge from "@/components/admin/shared/StatusBadge";
+import { getRevenue, getRentalReport, getCustomerReport, getInventoryReport, getLateFees } from "@/services/adminService";
+import { toast } from "sonner";
 
 const TABS = [
   { id: "revenue",     label: "Revenue",     icon: BarChart2    },
   { id: "rentals",     label: "Rentals",     icon: FileText     },
   { id: "customers",   label: "Customers",   icon: Users        },
   { id: "inventory",   label: "Inventory",   icon: Package      },
-  { id: "late",        label: "Late Returns",icon: AlertTriangle },
+  { id: "late",        label: "Late Fees",   icon: AlertTriangle },
 ];
-
-const REVENUE_DATA = [
-  { month: "January",  rentals: 38, revenue: 42000, avgRental: 1105 },
-  { month: "February", rentals: 34, revenue: 38000, avgRental: 1118 },
-  { month: "March",    rentals: 47, revenue: 51000, avgRental: 1085 },
-  { month: "April",    rentals: 43, revenue: 47000, avgRental: 1093 },
-  { month: "May",      rentals: 58, revenue: 63000, avgRental: 1086 },
-  { month: "June",     rentals: 53, revenue: 58000, avgRental: 1094 },
-  { month: "July",     rentals: 67, revenue: 72000, avgRental: 1075 },
-];
-
-const LATE_RETURNS = [
-  { rentalId: "R-2048", customer: "Sunita Joshi",   product: "Camping Tent",   daysLate: 4, fee: 2000, status: "OVERDUE" },
-  { rentalId: "R-2041", customer: "Vikas Kumar",    product: "Canon EOS R5",   daysLate: 2, fee: 3000, status: "OVERDUE" },
-  { rentalId: "R-2038", customer: "Meera Nair",     product: "Power Washer",   daysLate: 7, fee: 5600, status: "OVERDUE" },
-];
-
-function RevenueReport() {
-  const total = REVENUE_DATA.reduce((s, r) => s + r.revenue, 0);
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        {[
-          { label: "YTD Revenue",    value: `₹${total.toLocaleString()}`                },
-          { label: "Total Rentals",  value: REVENUE_DATA.reduce((s, r) => s + r.rentals, 0) },
-          { label: "Avg per Rental", value: `₹${Math.round(total / REVENUE_DATA.reduce((s, r) => s + r.rentals, 0)).toLocaleString()}` },
-        ].map(s => (
-          <div key={s.label} className="p-4 rounded-xl bg-primary-50 dark:bg-primary-900/20 text-center">
-            <p className="text-xl font-bold text-primary-700 dark:text-primary-300">{s.value}</p>
-            <p className="text-xs text-primary-500 mt-0.5">{s.label}</p>
-          </div>
-        ))}
-      </div>
-      <div className="overflow-x-auto">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Month</th>
-              <th>Rentals</th>
-              <th>Revenue</th>
-              <th>Avg / Rental</th>
-              <th>% Change</th>
-            </tr>
-          </thead>
-          <tbody>
-            {REVENUE_DATA.map((r, i) => {
-              const prev = REVENUE_DATA[i - 1];
-              const change = prev ? ((r.revenue - prev.revenue) / prev.revenue * 100).toFixed(1) : null;
-              return (
-                <tr key={r.month}>
-                  <td className="font-medium text-slate-900 dark:text-white">{r.month}</td>
-                  <td>{r.rentals}</td>
-                  <td className="font-semibold text-primary-600">₹{r.revenue.toLocaleString()}</td>
-                  <td>₹{r.avgRental.toLocaleString()}</td>
-                  <td>
-                    {change !== null && (
-                      <span className={`text-sm font-medium ${parseFloat(change) >= 0 ? "text-success-600" : "text-danger-600"}`}>
-                        {parseFloat(change) >= 0 ? "+" : ""}{change}%
-                      </span>
-                    )}
-                    {change === null && <span className="text-slate-400">—</span>}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-function LateReturnsReport() {
-  return (
-    <div className="space-y-4">
-      <div className="p-4 rounded-xl bg-danger-50 dark:bg-red-900/20 border border-danger-100 dark:border-red-800 flex items-center gap-3">
-        <AlertTriangle className="w-5 h-5 text-danger-600 flex-shrink-0" />
-        <div>
-          <p className="text-sm font-semibold text-danger-700 dark:text-red-400">{LATE_RETURNS.length} overdue rentals</p>
-          <p className="text-xs text-danger-600 dark:text-red-400">Total late fees: ₹{LATE_RETURNS.reduce((s, r) => s + r.fee, 0).toLocaleString()}</p>
-        </div>
-      </div>
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th>Rental ID</th>
-            <th>Customer</th>
-            <th>Product</th>
-            <th>Days Late</th>
-            <th>Late Fee</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {LATE_RETURNS.map(r => (
-            <tr key={r.rentalId}>
-              <td><code className="text-xs font-mono text-primary-600 bg-primary-50 dark:bg-primary-900/30 px-1.5 py-0.5 rounded">{r.rentalId}</code></td>
-              <td className="font-medium text-slate-900 dark:text-white">{r.customer}</td>
-              <td>{r.product}</td>
-              <td><span className="font-bold text-danger-600">{r.daysLate}</span></td>
-              <td className="font-semibold text-danger-600">₹{r.fee.toLocaleString()}</td>
-              <td><StatusBadge status={r.status} /></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
 
 export default function ReportsPage() {
   const [tab, setTab] = useState("revenue");
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState([]);
+
+  const loadReport = async (tabId) => {
+    setLoading(true);
+    try {
+      if (tabId === "revenue") {
+        const res = await getRevenue();
+        if (res.data?.success) {
+          // Group payments by month name
+          const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+          const monthlyMap = {};
+          res.data.data.forEach(p => {
+            const date = new Date(p.createdAt);
+            const mName = months[date.getMonth()];
+            if (!monthlyMap[mName]) {
+              monthlyMap[mName] = { rentals: 0, revenue: 0 };
+            }
+            monthlyMap[mName].revenue += p.amount;
+            monthlyMap[mName].rentals += 1;
+          });
+          const reportRows = Object.entries(monthlyMap).map(([month, val]) => ({
+            month,
+            rentals: val.rentals,
+            revenue: val.revenue,
+            avgRental: Math.round(val.revenue / val.rentals) || 0,
+          }));
+          setData(reportRows);
+        }
+      } else if (tabId === "rentals") {
+        const res = await getRentalReport();
+        if (res.data?.success) {
+          setData(res.data.data);
+        }
+      } else if (tabId === "customers") {
+        const res = await getCustomerReport();
+        if (res.data?.success) {
+          setData(res.data.data);
+        }
+      } else if (tabId === "inventory") {
+        const res = await getInventoryReport();
+        if (res.data?.success) {
+          setData(res.data.data);
+        }
+      } else if (tabId === "late") {
+        const res = await getLateFees();
+        if (res.data?.success) {
+          setData(res.data.data);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load report from server");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadReport(tab);
+  }, [tab]);
+
+  // Export functions
+  const handleExportCSV = () => {
+    if (data.length === 0) return toast.warning("No data to export");
+    const headers = Object.keys(data[0] || {}).join(",");
+    const rows = data.map(row => 
+      Object.values(row).map(val => typeof val === "object" ? JSON.stringify(val).replace(/,/g, ";") : val).join(",")
+    );
+    const csvContent = "data:text/csv;charset=utf-8," + [headers, ...rows].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `${tab}_report.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("CSV file exported successfully");
+  };
 
   return (
     <div>
@@ -132,28 +104,12 @@ export default function ReportsPage() {
         breadcrumbs={["Admin", "Reports"]}
         action={
           <div className="flex gap-2">
-            <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-              <Download className="w-4 h-4" /> CSV
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium transition-all">
-              <Download className="w-4 h-4" /> PDF
+            <button onClick={handleExportCSV} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+              <Download className="w-4 h-4" /> Export CSV
             </button>
           </div>
         }
       />
-
-      {/* Date range filter */}
-      <div className="flex items-center gap-3 mb-6 flex-wrap">
-        <select className="px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500">
-          <option>This Year (2025)</option>
-          <option>This Month</option>
-          <option>Last 30 Days</option>
-          <option>Custom Range</option>
-        </select>
-        <input type="date" className="px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500" />
-        <span className="text-slate-400 text-sm">to</span>
-        <input type="date" className="px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500" />
-      </div>
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 p-1.5 bg-slate-100 dark:bg-slate-800/60 rounded-2xl w-fit flex-wrap">
@@ -181,13 +137,168 @@ export default function ReportsPage() {
         transition={{ duration: 0.25 }}
         className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6"
       >
-        {tab === "revenue" && <RevenueReport />}
-        {tab === "late"    && <LateReturnsReport />}
-        {["rentals","customers","inventory"].includes(tab) && (
+        {loading ? (
+          <div className="py-12 flex justify-center items-center">
+            <div className="w-8 h-8 border-4 border-primary-600/30 border-t-primary-600 rounded-full animate-spin" />
+            <span className="ml-3 text-sm text-slate-500">Loading report data...</span>
+          </div>
+        ) : data.length === 0 ? (
           <div className="text-center py-16">
             <FileText className="w-12 h-12 text-slate-200 dark:text-slate-700 mx-auto mb-4" />
-            <p className="text-slate-500 dark:text-slate-400 font-medium capitalize">{tab} report</p>
-            <p className="text-sm text-slate-400 mt-1">Data loads from the API when connected.</p>
+            <p className="text-slate-500 dark:text-slate-400 font-medium capitalize">No report records found</p>
+          </div>
+        ) : (
+          <div>
+            {tab === "revenue" && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  {[
+                    { label: "YTD Revenue",    value: `₹${data.reduce((s, r) => s + r.revenue, 0).toLocaleString()}` },
+                    { label: "Total Rentals",  value: data.reduce((s, r) => s + r.rentals, 0) },
+                    { label: "Avg per Rental", value: `₹${Math.round(data.reduce((s, r) => s + r.revenue, 0) / (data.reduce((s, r) => s + r.rentals, 0) || 1)).toLocaleString()}` },
+                  ].map(s => (
+                    <div key={s.label} className="p-4 rounded-xl bg-primary-50 dark:bg-primary-900/20 text-center">
+                      <p className="text-xl font-bold text-primary-700 dark:text-primary-300">{s.value}</p>
+                      <p className="text-xs text-primary-500 mt-0.5">{s.label}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Month</th>
+                        <th>Rentals</th>
+                        <th>Revenue</th>
+                        <th>Avg / Rental</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.map(r => (
+                        <tr key={r.month}>
+                          <td className="font-medium text-slate-900 dark:text-white">{r.month}</td>
+                          <td>{r.rentals}</td>
+                          <td className="font-semibold text-primary-600">₹{r.revenue.toLocaleString()}</td>
+                          <td>₹{r.avgRental.toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {tab === "rentals" && (
+              <div className="overflow-x-auto">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Rental ID</th>
+                      <th>Customer</th>
+                      <th>Items Count</th>
+                      <th>Pickup Date</th>
+                      <th>Return Date</th>
+                      <th>Total Cost</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.map(r => (
+                      <tr key={r.id}>
+                        <td><code className="text-xs font-mono text-primary-600 bg-primary-50 dark:bg-primary-900/30 px-1.5 py-0.5 rounded">{r.id.substring(0, 8)}</code></td>
+                        <td>{r.user ? `${r.user.firstName} ${r.user.lastName}` : "Customer"}</td>
+                        <td>{r.items?.length || 0} items</td>
+                        <td>{new Date(r.pickupDate).toLocaleDateString()}</td>
+                        <td>{new Date(r.returnDate).toLocaleDateString()}</td>
+                        <td className="font-bold text-slate-900 dark:text-white">₹{r.totalCost.toLocaleString()}</td>
+                        <td><StatusBadge status={r.status} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {tab === "customers" && (
+              <div className="overflow-x-auto">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Customer</th>
+                      <th>Email</th>
+                      <th>Phone</th>
+                      <th>Rentals Ordered</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.map(c => (
+                      <tr key={c.id}>
+                        <td className="font-semibold">{c.firstName} {c.lastName}</td>
+                        <td>{c.email}</td>
+                        <td>{c.phone || "—"}</td>
+                        <td><span className="px-2.5 py-1 text-xs rounded-full bg-primary-50 text-primary-700 font-medium">{c.rentalOrders?.length || 0} rentals</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {tab === "inventory" && (
+              <div className="overflow-x-auto">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Category</th>
+                      <th>Available Stock</th>
+                      <th>Base Day Rate</th>
+                      <th>Deposit Required</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.map(p => (
+                      <tr key={p.id}>
+                        <td className="font-semibold">{p.name}</td>
+                        <td><span className="text-xs px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">{p.category?.name || "Uncategorized"}</span></td>
+                        <td><span className="font-bold">{p.stockQuantity}</span></td>
+                        <td>₹{p.rentalPricePerDay.toLocaleString()}</td>
+                        <td>₹{p.depositAmount.toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {tab === "late" && (
+              <div className="overflow-x-auto">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Inspection ID</th>
+                      <th>Days Overdue</th>
+                      <th>Penalty Charged</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.map(f => (
+                      <tr key={f.id}>
+                        <td><code className="text-xs font-mono text-primary-600 bg-primary-50 dark:bg-primary-900/30 px-1.5 py-0.5 rounded">{f.id.substring(0, 8)}</code></td>
+                        <td><span className="font-bold text-danger-600">{f.daysLate}</span></td>
+                        <td className="font-semibold text-danger-600">₹{f.penaltyAmount.toLocaleString()}</td>
+                        <td>
+                          <span className={`px-2 py-1 text-xs rounded-full font-semibold ${f.isPaid ? "bg-success-100 text-success-800" : "bg-warning-100 text-warning-800"}`}>
+                            {f.isPaid ? "Paid" : "Unpaid"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </motion.div>

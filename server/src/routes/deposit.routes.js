@@ -22,6 +22,13 @@ router.get(
   depositController.getDepositHistory
 );
 
+router.get(
+  "/",
+  requireAuth,
+  requireRoles("ADMIN", "MANAGER"),
+  depositController.getDepositHistory
+);
+
 router.get("/:id", requireAuth, depositController.getDeposit);
 
 router.post(

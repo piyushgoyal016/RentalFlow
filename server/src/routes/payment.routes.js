@@ -7,6 +7,13 @@ import { requireRoles } from "../middlewares/role.middleware.js";
 
 const router = express.Router();
 
+router.get(
+  "/",
+  requireAuth,
+  requireRoles("ADMIN", "MANAGER"),
+  paymentController.getPayments
+);
+
 router.post(
   "/",
   requireAuth,
@@ -29,6 +36,12 @@ router.post(
   requireAuth,
   requireRoles("ADMIN", "MANAGER"),
   paymentController.refundPayment
+);
+
+router.get(
+  "/:id/print",
+  requireAuth,
+  paymentController.printInvoice
 );
 
 export default router;

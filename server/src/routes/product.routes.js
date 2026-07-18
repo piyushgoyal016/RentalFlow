@@ -10,7 +10,7 @@ const router = express.Router();
 router.post(
   "/",
   requireAuth,
-  requireRoles("ADMIN", "MANAGER"),
+  requireRoles("ADMIN", "MANAGER", "VENDOR"),
   validate(createProductSchema),
   productController.createProduct
 );
@@ -21,7 +21,7 @@ router.get("/:id", productController.getProductById);
 router.put(
   "/:id",
   requireAuth,
-  requireRoles("ADMIN", "MANAGER"),
+  requireRoles("ADMIN", "MANAGER", "VENDOR"),
   validate(updateProductSchema),
   productController.updateProduct
 );
@@ -29,14 +29,14 @@ router.put(
 router.delete(
   "/:id",
   requireAuth,
-  requireRoles("ADMIN"),
+  requireRoles("ADMIN", "VENDOR"),
   productController.deleteProduct
 );
 
 router.patch(
   "/:id/availability",
   requireAuth,
-  requireRoles("ADMIN", "MANAGER"),
+  requireRoles("ADMIN", "MANAGER", "VENDOR"),
   productController.toggleAvailability
 );
 

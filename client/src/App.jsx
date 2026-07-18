@@ -12,6 +12,7 @@ import CustomerLayout from "@/components/customer/layout/CustomerLayout";
 import LandingPage       from "@/pages/Landing/LandingPage";
 import LoginPage         from "@/pages/Auth/LoginPage";
 import RegisterPage      from "@/pages/Auth/RegisterPage";
+import VendorRegisterPage from "@/pages/Auth/VendorRegisterPage";
 import ForgotPasswordPage from "@/pages/Auth/ForgotPasswordPage";
 import ProductsPage      from "@/pages/Customer/ProductsPage";
 import ProductDetailPage from "@/pages/Customer/ProductDetailPage";
@@ -23,6 +24,7 @@ import NotificationsPage from "@/pages/Customer/NotificationsPage";
 import CustomerDashboardPage from "@/pages/Customer/CustomerDashboardPage";
 import AddressesPage     from "@/pages/Customer/AddressesPage";
 import CustomerPaymentsPage from "@/pages/Customer/PaymentsPage";
+import CartPage          from "@/pages/Customer/CartPage";
 import NotFoundPage      from "@/pages/NotFoundPage";
 
 // ─── Admin Pages ───────────────────────────────────────────────────────────────
@@ -88,10 +90,37 @@ function AdminRoute({ children }) {
   return children;
 }
 
+// ─── Root Redirect Guard ───────────────────────────────────────────────────────
+function RootRedirect() {
+  const { isAuthenticated, isLoading, user } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin" style={{ borderWidth: "3px" }} />
+          <p className="text-sm text-slate-400">Loading…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  const role = (user?.role || "").toUpperCase();
+  if (role === "ADMIN" || role === "VENDOR") {
+    return <Navigate to="/admin" replace />;
+  }
+
+  return <Navigate to="/dashboard" replace />;
+}
+
 // ─── Customer Layout ───────────────────────────────────────────────────────────
 function MainLayout() {
   const location = useLocation();
-  const isAuthPage = ["/login", "/register", "/forgot-password"].includes(location.pathname);
+  const isAuthPage = ["/login", "/register", "/forgot-password", "/vendor-register"].includes(location.pathname);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -147,18 +176,20 @@ function App() {
         <Route path="/addresses"         element={<AddressesPage />}         />
         <Route path="/profile"           element={<ProfilePage />}           />
         <Route path="/notifications"     element={<NotificationsPage />}     />
+        <Route path="/cart"              element={<CartPage />}              />
+        <Route path="/products"          element={<ProductsPage />}          />
+        <Route path="/products/:id"      element={<ProductDetailPage />}     />
+        <Route path="/categories/:slug"  element={<CategoryPage />}          />
       </Route>
 
       {/* ── Public Customer Routes ────────────────────────── */}
       <Route element={<MainLayout />}>
         {/* Public */}
-        <Route path="/"                  element={<LandingPage />}       />
+        <Route path="/"                  element={<RootRedirect />}       />
         <Route path="/login"             element={<LoginPage />}         />
         <Route path="/register"          element={<RegisterPage />}      />
+        <Route path="/vendor-register"   element={<VendorRegisterPage />} />
         <Route path="/forgot-password"   element={<ForgotPasswordPage />}/>
-        <Route path="/products"          element={<ProductsPage />}      />
-        <Route path="/products/:id"      element={<ProductDetailPage />} />
-        <Route path="/categories/:slug"  element={<CategoryPage />}      />
 
         {/* 404 */}
         <Route path="*" element={<NotFoundPage />} />

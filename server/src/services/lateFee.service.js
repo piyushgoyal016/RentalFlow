@@ -1,6 +1,7 @@
 import * as lateFeeRepository from "../repositories/lateFee.repository.js";
 import * as returnRepository from "../repositories/return.repository.js";
 import ApiError from "../utils/ApiError.js";
+import { prisma } from "../config/db.js";
 
 const LATE_FEE_PER_DAY = 15.0; // Base config
 
@@ -21,7 +22,6 @@ export const calculateAndChargePenalty = async (returnInspectionId) => {
     throw new ApiError(400, "Item was not returned late, no fee applicable");
   }
 
-  // Calculate based on days late and fixed config (could be extended to hourly)
   const penaltyAmount = diffDays * LATE_FEE_PER_DAY;
 
   return await lateFeeRepository.create({
@@ -41,4 +41,38 @@ export const payLateFee = async (id) => {
 
 export const getAllLateFees = async () => {
   return await lateFeeRepository.findAll();
+};
+
+// Global Settings Services
+export const getGlobalSettings = async () => {
+  let settings = await prisma.globalSettings.findFirst();
+  if (!settings) {
+    settings = await prisma.globalSettings.create({
+      data: {
+        lateFeeEnabled: true,
+        defaultLateFeeRate: 150.0
+      }
+    });
+  }
+  return settings;
+};
+
+export const updateGlobalSettings = async (data) => {
+  let settings = await prisma.globalSettings.findFirst();
+  if (!settings) {
+    return await prisma.globalSettings.create({
+      data: {
+        lateFeeEnabled: data.lateFeeEnabled !== undefined ? data.lateFeeEnabled : true,
+        defaultLateFeeRate: data.defaultLateFeeRate !== undefined ? data.defaultLateFeeRate : 150.0
+      }
+    });
+  }
+  
+  return await prisma.globalSettings.update({
+    where: { id: settings.id },
+    data: {
+      lateFeeEnabled: data.lateFeeEnabled !== undefined ? data.lateFeeEnabled : settings.lateFeeEnabled,
+      defaultLateFeeRate: data.defaultLateFeeRate !== undefined ? data.defaultLateFeeRate : settings.defaultLateFeeRate
+    }
+  });
 };

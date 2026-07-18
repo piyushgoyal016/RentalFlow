@@ -8,7 +8,7 @@ import { prisma } from "../config/db.js";
  * Handle user registration flow
  */
 export const registerUser = async (payload) => {
-  const { firstName, lastName, email, password, phone, roleName = "CUSTOMER" } = payload;
+  const { firstName, lastName, email, password, phone, companyName, gstNo, roleName = "CUSTOMER" } = payload;
 
   const existingUser = await userRepository.findUserByEmail(email);
   if (existingUser) {
@@ -28,6 +28,8 @@ export const registerUser = async (payload) => {
     email,
     password: hashedPassword,
     phone,
+    companyName,
+    gstNo,
     roleId: role.id,
   });
 
