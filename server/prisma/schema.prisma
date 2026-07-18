@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+// In Prisma v7, the datasource URL is NO LONGER set here.
+// It is managed in prisma.config.ts via the `datasource.url` field.
+// Only the `provider` stays here so Prisma knows which SQL dialect to use.
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Role Model
+// Defines access control levels. A User must always belong to a Role.
+// ---------------------------------------------------------------------------
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique  // e.g. "ADMIN", "MANAGER", "CUSTOMER"
+  description String?
+
+  users User[]  // one role → many users
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// User Model
+// Core identity entity. Every authenticated person in the system is a User.
+// ---------------------------------------------------------------------------
+model User {
+  id        String  @id @default(uuid())
+  firstName String
+  lastName  String
+  email     String  @unique
+  password  String  // stored as bcrypt hash — NEVER plain text
+  phone     String?
+  isActive  Boolean @default(true)
+
+  // Foreign key to Role — enforces that every user has a role
+  roleId String
+  role   Role   @relation(fields: [roleId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
