@@ -1,5 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient(); // In a real app, import from a singleton config/db.js
+import { prisma } from "../config/db.js";
 
 export const create = async (data) => {
   return await prisma.category.create({ data });
