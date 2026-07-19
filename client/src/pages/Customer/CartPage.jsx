@@ -174,6 +174,23 @@ export default function CartPage() {
     }
   };
 
+  const handlePaymentSubmit = () => {
+    const num = cardNumber.replace(/\s+/g, "");
+    if (!/^\d{16}$/.test(num)) {
+      return toast.error("Please enter a valid 16-digit card number.");
+    }
+    if (!cardName.trim() || cardName.trim().length < 3) {
+      return toast.error("Please enter a valid cardholder name.");
+    }
+    if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(cardExpiry)) {
+      return toast.error("Please enter a valid expiry date (MM/YY).");
+    }
+    if (!/^\d{3,4}$/.test(cardCvv)) {
+      return toast.error("Please enter a valid CVV (3-4 digits).");
+    }
+    executeOrderCheckout();
+  };
+
   // Checkout order submission
   const executeOrderCheckout = async () => {
     try {
@@ -619,7 +636,10 @@ export default function CartPage() {
                         type="text"
                         placeholder="XXXX XXXX XXXX XXXX"
                         value={cardNumber}
-                        onChange={e => setCardNumber(e.target.value)}
+                        onChange={e => {
+                          const val = e.target.value.replace(/\D/g, "").substring(0, 16);
+                          setCardNumber(val.match(/.{1,4}/g)?.join(" ") || val);
+                        }}
                         className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-850 dark:bg-slate-950 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 text-slate-900 dark:text-white"
                       />
                     </div>
@@ -632,15 +652,19 @@ export default function CartPage() {
                         type="text"
                         placeholder="JURY MEMBER"
                         value={cardName}
-                        onChange={e => setCardName(e.target.value.toUpperCase())}
+                        onChange={e => setCardName(e.target.value.toUpperCase().replace(/[^A-Z\s]/g, ""))}
                         className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-850 dark:bg-slate-950 text-slate-900 dark:text-white"
                       />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-[10px] font-bold text-slate-400 uppercase">Expiry / CVV</label>
                       <div className="flex gap-1.5">
-                        <input type="text" placeholder="MM/YY" value={cardExpiry} onChange={e => setCardExpiry(e.target.value)} className="w-1/2 p-2.5 text-center rounded-xl border border-slate-200 dark:border-slate-800 dark:bg-slate-955 text-slate-900 dark:text-white" />
-                        <input type="password" placeholder="CVV" value={cardCvv} onChange={e => setCardCvv(e.target.value)} className="w-1/2 p-2.5 text-center rounded-xl border border-slate-200 dark:border-slate-800 dark:bg-slate-955 text-slate-900 dark:text-white" />
+                        <input type="text" placeholder="MM/YY" value={cardExpiry} onChange={e => {
+                          let val = e.target.value.replace(/\D/g, "").substring(0, 4);
+                          if (val.length > 2) val = val.substring(0, 2) + "/" + val.substring(2);
+                          setCardExpiry(val);
+                        }} className="w-1/2 p-2.5 text-center rounded-xl border border-slate-200 dark:border-slate-800 dark:bg-slate-955 text-slate-900 dark:text-white" />
+                        <input type="password" placeholder="CVV" value={cardCvv} onChange={e => setCardCvv(e.target.value.replace(/\D/g, "").substring(0, 4))} className="w-1/2 p-2.5 text-center rounded-xl border border-slate-200 dark:border-slate-800 dark:bg-slate-955 text-slate-900 dark:text-white" />
                       </div>
                     </div>
                   </div>
@@ -716,7 +740,7 @@ export default function CartPage() {
               </div>
 
               <button
-                onClick={executeOrderCheckout}
+                onClick={handlePaymentSubmit}
                 className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-950 text-white dark:bg-white dark:hover:bg-slate-50 dark:text-slate-900 font-bold text-sm shadow-sm transition-all"
               >
                 Pay Now
