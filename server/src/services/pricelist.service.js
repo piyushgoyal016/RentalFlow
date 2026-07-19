@@ -29,11 +29,13 @@ export const deletePricelist = async (id) => {
 };
 
 // Pricing engine: calculates custom pricing using rules
-export const resolveRentalPrice = async (productId, quantity, durationHours) => {
-  const product = await productRepository.findById(productId);
+export const resolveRentalPrice = async (productOrId, quantity, durationHours) => {
+  const product = typeof productOrId === "string"
+    ? await productRepository.findById(productOrId)
+    : productOrId;
   if (!product) throw new ApiError(404, "Product not found");
 
-  const rules = await pricelistRepository.findActiveRules(productId, product.categoryId);
+  const rules = await pricelistRepository.findActiveRules(product.id, product.categoryId);
 
   // If no pricelist rules apply, default to the product's base price per day
   const basePricePerDay = product.rentalPricePerDay;

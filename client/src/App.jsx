@@ -1,8 +1,10 @@
 import { Routes, Route, Outlet, useLocation, Navigate } from "react-router-dom";
+import { useState } from "react";
 import { Navbar } from "@/components/common/Navbar";
 import { Footer } from "@/components/common/Footer";
 import { ProtectedRoute } from "@/components/common/ProtectedRoute";
 import { useAuth } from "@/context/AuthContext";
+import SplashScreen from "@/components/common/SplashScreen";
 
 // ─── Layouts ──────────────────────────────────────────────────────────────────
 import AdminLayout from "@/components/admin/layout/AdminLayout";
@@ -41,6 +43,8 @@ import ReportsPage        from "@/pages/Admin/ReportsPage";
 import AnalyticsPage      from "@/pages/Admin/AnalyticsPage";
 import AdminNotificationsPage from "@/pages/Admin/NotificationsPage";
 import SettingsPage       from "@/pages/Admin/SettingsPage";
+import PricelistPage      from "@/pages/Admin/PricelistPage";
+import QuotationTemplatesPage from "@/pages/Admin/QuotationTemplatesPage";
 
 // ─── Admin Route Guard ─────────────────────────────────────────────────────────
 function AdminRoute({ children }) {
@@ -135,8 +139,12 @@ function MainLayout() {
 
 // ─── App ───────────────────────────────────────────────────────────────────────
 function App() {
+  const [splashDone, setSplashDone] = useState(false);
+
   return (
-    <Routes>
+    <>
+      {!splashDone && <SplashScreen onDone={() => setSplashDone(true)} />}
+      <Routes>
       {/* ── Admin Routes ─────────────────────────────────── */}
       <Route
         path="/admin"
@@ -155,6 +163,8 @@ function App() {
         <Route path="returns"   element={<ReturnsPage />}            />
         <Route path="payments"  element={<PaymentsPage />}           />
         <Route path="deposits"  element={<DepositsPage />}           />
+        <Route path="pricelists"         element={<PricelistPage />}            />
+        <Route path="quotation-templates" element={<QuotationTemplatesPage />}   />
         <Route path="reports"   element={<ReportsPage />}            />
         <Route path="analytics" element={<AnalyticsPage />}          />
         <Route path="notifications" element={<AdminNotificationsPage />} />
@@ -194,7 +204,8 @@ function App() {
         {/* 404 */}
         <Route path="*" element={<NotFoundPage />} />
       </Route>
-    </Routes>
+        </Routes>
+    </>
   );
 }
 

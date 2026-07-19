@@ -4,7 +4,18 @@ export const generateRevenueReport = async (user) => {
   const isVendor = user.role.name === "VENDOR";
 
   const payments = await prisma.payment.findMany({
-    where: { status: "COMPLETED" },
+    where: {
+      status: "COMPLETED",
+      rentalOrder: isVendor ? {
+        items: {
+          some: {
+            product: {
+              vendorId: user.id
+            }
+          }
+        }
+      } : undefined
+    },
     include: {
       rentalOrder: {
         include: {
@@ -16,13 +27,6 @@ export const generateRevenueReport = async (user) => {
     }
   });
 
-  if (isVendor) {
-    // Only return payments for orders containing the vendor's products
-    return payments.filter(p => 
-      p.rentalOrder.items.some(item => item.product.vendorId === user.id)
-    );
-  }
-
   return payments;
 };
 
@@ -30,6 +34,15 @@ export const generateRentalReport = async (user) => {
   const isVendor = user.role.name === "VENDOR";
 
   const rentals = await prisma.rentalOrder.findMany({
+    where: isVendor ? {
+      items: {
+        some: {
+          product: {
+            vendorId: user.id
+          }
+        }
+      }
+    } : undefined,
     include: {
       user: true,
       items: {
@@ -39,12 +52,9 @@ export const generateRentalReport = async (user) => {
   });
 
   if (isVendor) {
-    // Return only orders where at least one product belongs to the vendor
-    return rentals.filter(r => 
-      r.items.some(item => item.product.vendorId === user.id)
-    ).map(r => ({
+    // Keep mapping to filter only the vendor's items in the returned response
+    return rentals.map(r => ({
       ...r,
-      // Filter the items list to only show the vendor's own items
       items: r.items.filter(item => item.product.vendorId === user.id)
     }));
   }
@@ -56,7 +66,20 @@ export const generateCustomerReport = async (user) => {
   const isVendor = user.role.name === "VENDOR";
 
   const customers = await prisma.user.findMany({
-    where: { role: { name: "CUSTOMER" } },
+    where: {
+      role: { name: "CUSTOMER" },
+      rentalOrders: isVendor ? {
+        some: {
+          items: {
+            some: {
+              product: {
+                vendorId: user.id
+              }
+            }
+          }
+        }
+      } : undefined
+    },
     include: {
       rentalOrders: {
         include: {
@@ -67,15 +90,6 @@ export const generateCustomerReport = async (user) => {
       }
     }
   });
-
-  if (isVendor) {
-    // Filter customers who have rented items from this vendor
-    return customers.filter(c => 
-      c.rentalOrders.some(order => 
-        order.items.some(item => item.product.vendorId === user.id)
-      )
-    );
-  }
 
   return customers;
 };

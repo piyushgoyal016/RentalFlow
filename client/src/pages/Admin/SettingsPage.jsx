@@ -134,18 +134,22 @@ function CompanySettings() {
 
 function TaxSettings() {
   const [lateFeeEnabled, setLateFeeEnabled] = useState(true);
-  const [lateFeeRate, setLateFeeRate] = useState(150);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved]   = useState(false);
+  const [lateFeeRate,    setLateFeeRate]    = useState(150);
+  const [gracePeriod,    setGracePeriod]    = useState(0);
+  const [maxLateFee,     setMaxLateFee]     = useState("");
+  const [saving,         setSaving]         = useState(false);
+  const [saved,          setSaved]          = useState(false);
 
   useEffect(() => {
     async function loadSettings() {
       try {
         const response = await api.get("/late-fees/global/settings");
         if (response.data?.success) {
-          const settings = response.data.data;
-          setLateFeeEnabled(settings.lateFeeEnabled);
-          setLateFeeRate(settings.defaultLateFeeRate);
+          const s = response.data.data;
+          setLateFeeEnabled(s.lateFeeEnabled);
+          setLateFeeRate(s.defaultLateFeeRate);
+          setGracePeriod(s.gracePeriodMinutes ?? 0);
+          setMaxLateFee(s.maxLateFeeAmount != null ? s.maxLateFeeAmount : "");
         }
       } catch (err) {
         toast.error("Failed to load late fee settings");
@@ -159,7 +163,9 @@ function TaxSettings() {
     try {
       const response = await api.put("/late-fees/global/settings", {
         lateFeeEnabled,
-        defaultLateFeeRate: parseFloat(lateFeeRate),
+        defaultLateFeeRate:  parseFloat(lateFeeRate),
+        gracePeriodMinutes:  parseInt(gracePeriod) || 0,
+        maxLateFeeAmount:    maxLateFee !== "" ? parseFloat(maxLateFee) : null,
       });
       if (response.data?.success) {
         setSaved(true);
@@ -180,12 +186,26 @@ function TaxSettings() {
           <Toggle checked={lateFeeEnabled} onChange={() => setLateFeeEnabled(s => !s)} />
         </Field>
         {lateFeeEnabled && (
-          <Field label="Default Late Fee Rate (₹/Hour)" hint="Default rate for overdue returns">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-slate-400">₹</span>
-              <InputField type="number" value={lateFeeRate} onChange={e => setLateFeeRate(e.target.value)} className="w-40" />
-            </div>
-          </Field>
+          <>
+            <Field label="Default Late Fee Rate (₹/Hour)" hint="Charged per hour after return deadline">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-400">₹</span>
+                <InputField type="number" value={lateFeeRate} onChange={e => setLateFeeRate(e.target.value)} className="w-40" />
+              </div>
+            </Field>
+            <Field label="Grace Period (minutes)" hint="Allow this many minutes before charging is triggered">
+              <div className="flex items-center gap-2">
+                <InputField type="number" min="0" value={gracePeriod} onChange={e => setGracePeriod(e.target.value)} className="w-40" />
+                <span className="text-sm text-slate-400">min</span>
+              </div>
+            </Field>
+            <Field label="Maximum Late Fee Cap (₹)" hint="Leave blank for no upper limit">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-400">₹</span>
+                <InputField type="number" step="0.01" value={maxLateFee} placeholder="No limit" onChange={e => setMaxLateFee(e.target.value)} className="w-40" />
+              </div>
+            </Field>
+          </>
         )}
       </div>
       <div className="flex justify-end mt-6">

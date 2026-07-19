@@ -205,12 +205,12 @@ export default function ReportsPage() {
                   <tbody>
                     {data.map(r => (
                       <tr key={r.id}>
-                        <td><code className="text-xs font-mono text-primary-600 bg-primary-50 dark:bg-primary-900/30 px-1.5 py-0.5 rounded">{r.id.substring(0, 8)}</code></td>
+                        <td><code className="text-xs font-mono text-primary-600 bg-primary-50 dark:bg-primary-900/30 px-1.5 py-0.5 rounded">{(r.id ?? "—").substring(0, 8)}</code></td>
                         <td>{r.user ? `${r.user.firstName} ${r.user.lastName}` : "Customer"}</td>
                         <td>{r.items?.length || 0} items</td>
-                        <td>{new Date(r.pickupDate).toLocaleDateString()}</td>
-                        <td>{new Date(r.returnDate).toLocaleDateString()}</td>
-                        <td className="font-bold text-slate-900 dark:text-white">₹{r.totalCost.toLocaleString()}</td>
+                        <td>{r.pickupDate ? new Date(r.pickupDate).toLocaleDateString() : "—"}</td>
+                        <td>{r.returnDate ? new Date(r.returnDate).toLocaleDateString() : "—"}</td>
+                        <td className="font-bold text-slate-900 dark:text-white">₹{(r.totalCost ?? 0).toLocaleString()}</td>
                         <td><StatusBadge status={r.status} /></td>
                       </tr>
                     ))}
@@ -262,8 +262,8 @@ export default function ReportsPage() {
                         <td className="font-semibold">{p.name}</td>
                         <td><span className="text-xs px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">{p.category?.name || "Uncategorized"}</span></td>
                         <td><span className="font-bold">{p.stockQuantity}</span></td>
-                        <td>₹{p.rentalPricePerDay.toLocaleString()}</td>
-                        <td>₹{p.depositAmount.toLocaleString()}</td>
+                        <td>₹{(p.rentalPricePerDay ?? 0).toLocaleString()}</td>
+                        <td>₹{(p.depositAmount ?? 0).toLocaleString()}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -285,9 +285,9 @@ export default function ReportsPage() {
                   <tbody>
                     {data.map(f => (
                       <tr key={f.id}>
-                        <td><code className="text-xs font-mono text-primary-600 bg-primary-50 dark:bg-primary-900/30 px-1.5 py-0.5 rounded">{f.id.substring(0, 8)}</code></td>
-                        <td><span className="font-bold text-danger-600">{f.daysLate}</span></td>
-                        <td className="font-semibold text-danger-600">₹{f.penaltyAmount.toLocaleString()}</td>
+                        <td><code className="text-xs font-mono text-primary-600 bg-primary-50 dark:bg-primary-900/30 px-1.5 py-0.5 rounded">{(f.id ?? "—").substring(0, 8)}</code></td>
+                        <td><span className="font-bold text-danger-600">{f.daysLate ?? 0}</span></td>
+                        <td className="font-semibold text-danger-600">₹{(f.penaltyAmount ?? 0).toLocaleString()}</td>
                         <td>
                           <span className={`px-2 py-1 text-xs rounded-full font-semibold ${f.isPaid ? "bg-success-100 text-success-800" : "bg-warning-100 text-warning-800"}`}>
                             {f.isPaid ? "Paid" : "Unpaid"}

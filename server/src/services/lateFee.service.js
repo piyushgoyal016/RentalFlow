@@ -50,7 +50,9 @@ export const getGlobalSettings = async () => {
     settings = await prisma.globalSettings.create({
       data: {
         lateFeeEnabled: true,
-        defaultLateFeeRate: 150.0
+        defaultLateFeeRate: 150.0,
+        gracePeriodMinutes: 0,
+        maxLateFeeAmount: null,
       }
     });
   }
@@ -62,8 +64,10 @@ export const updateGlobalSettings = async (data) => {
   if (!settings) {
     return await prisma.globalSettings.create({
       data: {
-        lateFeeEnabled: data.lateFeeEnabled !== undefined ? data.lateFeeEnabled : true,
-        defaultLateFeeRate: data.defaultLateFeeRate !== undefined ? data.defaultLateFeeRate : 150.0
+        lateFeeEnabled:     data.lateFeeEnabled     !== undefined ? data.lateFeeEnabled     : true,
+        defaultLateFeeRate: data.defaultLateFeeRate !== undefined ? data.defaultLateFeeRate : 150.0,
+        gracePeriodMinutes: data.gracePeriodMinutes !== undefined ? data.gracePeriodMinutes : 0,
+        maxLateFeeAmount:   data.maxLateFeeAmount   !== undefined ? data.maxLateFeeAmount   : null,
       }
     });
   }
@@ -71,8 +75,10 @@ export const updateGlobalSettings = async (data) => {
   return await prisma.globalSettings.update({
     where: { id: settings.id },
     data: {
-      lateFeeEnabled: data.lateFeeEnabled !== undefined ? data.lateFeeEnabled : settings.lateFeeEnabled,
-      defaultLateFeeRate: data.defaultLateFeeRate !== undefined ? data.defaultLateFeeRate : settings.defaultLateFeeRate
+      lateFeeEnabled:     data.lateFeeEnabled     !== undefined ? data.lateFeeEnabled     : settings.lateFeeEnabled,
+      defaultLateFeeRate: data.defaultLateFeeRate !== undefined ? data.defaultLateFeeRate : settings.defaultLateFeeRate,
+      gracePeriodMinutes: data.gracePeriodMinutes !== undefined ? data.gracePeriodMinutes : settings.gracePeriodMinutes,
+      maxLateFeeAmount:   data.maxLateFeeAmount   !== undefined ? data.maxLateFeeAmount   : settings.maxLateFeeAmount,
     }
   });
 };

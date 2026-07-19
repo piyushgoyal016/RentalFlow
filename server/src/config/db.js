@@ -1,21 +1,33 @@
-import { PrismaClient } from "../../generated/prisma/client.js";
-import { PrismaPg } from "@prisma/adapter-pg";
-import pg from "pg";
+import { PrismaClient } from "@prisma/client";
 import { config } from "./env.js";
 
-const { Pool } = pg;
+let prisma;
 
-const pool = new Pool({
-  connectionString: config.databaseUrl,
-});
+const isPostgres = config.databaseUrl.startsWith("postgres://") ||
+                   config.databaseUrl.startsWith("postgresql://");
 
-const adapter = new PrismaPg(pool);
+if (isPostgres) {
+  // ─── Remote PostgreSQL via pg pool adapter ────────────────────────────────
+  const { PrismaPg }      = await import("@prisma/adapter-pg");
+  const { default: pg }   = await import("pg");
+  const pool    = new pg.Pool({ connectionString: config.databaseUrl });
+  const adapter = new PrismaPg(pool);
 
-const prisma =
-  globalThis.__prisma ?? new PrismaClient({
+  prisma = globalThis.__prisma ?? new PrismaClient({
     adapter,
-    log: config.isDevelopment ? ["query", "warn", "error"] : ["warn", "error"],
+    log: ["warn", "error"],
   });
+} else {
+  // ─── Local SQLite via LibSQL adapter ─────────────────────────────────────
+  // PrismaLibSql is a FACTORY — pass { url } config directly, not a libsql client
+  const { PrismaLibSql } = await import("@prisma/adapter-libsql");
+  const adapter = new PrismaLibSql({ url: config.databaseUrl });
+
+  prisma = globalThis.__prisma ?? new PrismaClient({
+    adapter,
+    log: ["warn", "error"],
+  });
+}
 
 if (config.isDevelopment) {
   globalThis.__prisma = prisma;
@@ -24,7 +36,7 @@ if (config.isDevelopment) {
 export const connectDB = async () => {
   try {
     await prisma.$connect();
-    console.log("✅ [DB] Connected to PostgreSQL via Prisma (v7 adapter).");
+    console.log(`✅ [DB] Connected to ${isPostgres ? "PostgreSQL (remote)" : "SQLite (local)"} via Prisma.`);
   } catch (error) {
     console.error("❌ [DB] Connection failed:", error.message);
     process.exit(1);
@@ -33,8 +45,7 @@ export const connectDB = async () => {
 
 export const disconnectDB = async () => {
   await prisma.$disconnect();
-  await pool.end();
-  console.log("🔌 [DB] Prisma and PG Pool disconnected.");
+  console.log("🔌 [DB] Disconnected.");
 };
 
 export { prisma };

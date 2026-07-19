@@ -5,3 +5,10 @@ node_modules
 /generated/prisma
 /logs/
 
+# SQLite local database (do not commit binary DB files)
+*.db
+*.db-shm
+*.db-wal
+
+# Scratch/test scripts
+/scratch/

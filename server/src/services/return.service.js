@@ -28,39 +28,52 @@ export const processReturn = async (rentalOrderId, data) => {
   let lateFeeData = null;
 
   if (actualReturn.getTime() > expectedReturn.getTime()) {
-    // Overdue! Fetch global settings
-    const settings = await prisma.globalSettings.findFirst();
-    const isGlobalLateFeeEnabled = settings ? settings.lateFeeEnabled : true;
-    const defaultLateFeeRate = settings ? settings.defaultLateFeeRate : 150.0;
+    // Fetch settings + all products for this rental in PARALLEL (eliminates N+1)
+    const productIds = rental.items.map(i => i.productId);
+
+    const [settings, products, lateFeesProduct] = await Promise.all([
+      prisma.globalSettings.findFirst(),
+      prisma.product.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true, lateFeeEnabled: true, lateFeeRate: true }
+      }),
+      prisma.product.findUnique({
+        where: { barcode: 'LATE_FEES_SERVICE' },
+        select: { id: true }
+      }),
+    ]);
+
+    const isGlobalLateFeeEnabled = settings?.lateFeeEnabled ?? true;
+    const defaultLateFeeRate     = settings?.defaultLateFeeRate ?? 150.0;
+    const gracePeriodMs          = (settings?.gracePeriodMinutes ?? 0) * 60 * 1000;
+    const maxLateFeeAmount       = settings?.maxLateFeeAmount ?? null;
 
     const diffTime = actualReturn.getTime() - expectedReturn.getTime();
-    const hoursLate = Math.ceil(diffTime / (1000 * 60 * 60)) || 1; // Round up to nearest hour
 
-    let totalPenalty = 0;
-    
-    // Sum penalties for each product
-    for (const item of rental.items) {
-      const product = await productRepository.findById(item.productId);
-      if (product) {
-        // If late fee is enabled for this product specifically or globally (when not overridden)
-        const isLateFeeEnabled = product.lateFeeEnabled !== undefined ? product.lateFeeEnabled : isGlobalLateFeeEnabled;
-        
-        if (isLateFeeEnabled) {
-          const rate = product.lateFeeRate !== null && product.lateFeeRate !== undefined 
-            ? product.lateFeeRate 
-            : defaultLateFeeRate;
-            
-          totalPenalty += hoursLate * rate * item.quantity;
+    if (diffTime > gracePeriodMs) {
+      const effectiveDiff = diffTime - gracePeriodMs;
+      const hoursLate = Math.ceil(effectiveDiff / (1000 * 60 * 60)) || 1;
+
+      // Build a product lookup map (O(1) access instead of O(n) per item)
+      const productMap = Object.fromEntries(products.map(p => [p.id, p]));
+
+      let totalPenalty = 0;
+      for (const item of rental.items) {
+        const product = productMap[item.productId];
+        if (product) {
+          const isLateFeeEnabled = product.lateFeeEnabled ?? isGlobalLateFeeEnabled;
+          if (isLateFeeEnabled) {
+            const rate = product.lateFeeRate ?? defaultLateFeeRate;
+            totalPenalty += hoursLate * rate * item.quantity;
+          }
         }
       }
-    }
 
-    if (totalPenalty > 0) {
-      const lateFeesProduct = await prisma.product.findUnique({
-        where: { barcode: 'LATE_FEES_SERVICE' }
-      });
+      if (maxLateFeeAmount !== null && totalPenalty > maxLateFeeAmount) {
+        totalPenalty = maxLateFeeAmount;
+      }
 
-      if (lateFeesProduct) {
+      if (totalPenalty > 0 && lateFeesProduct) {
         lateFeeData = {
           hoursLate,
           penaltyAmount: totalPenalty,

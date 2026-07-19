@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, Tag, Package, ShoppingBag,
   FileText, RotateCcw, CreditCard, Vault, BarChart2,
   TrendingUp, Bell, Settings, LogOut, ChevronLeft,
-  ChevronRight, Building2, Menu
+  ChevronRight, Building2, Menu, List, ClipboardList
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -22,10 +22,12 @@ const NAV_GROUPS = [
   {
     label: "Operations",
     items: [
-      { to: "/admin/rentals",    icon: FileText,        label: "Rentals"     },
-      { to: "/admin/returns",    icon: RotateCcw,       label: "Returns"     },
-      { to: "/admin/payments",   icon: CreditCard,      label: "Payments"    },
-      { to: "/admin/deposits",   icon: Vault,           label: "Deposits"    },
+      { to: "/admin/rentals",            icon: FileText,      label: "Rentals"               },
+      { to: "/admin/returns",            icon: RotateCcw,     label: "Returns"               },
+      { to: "/admin/payments",           icon: CreditCard,    label: "Payments"              },
+      { to: "/admin/deposits",           icon: Vault,         label: "Deposits"              },
+      { to: "/admin/pricelists",         icon: List,          label: "Pricelists"            },
+      { to: "/admin/quotation-templates",icon: ClipboardList, label: "Quotation Templates"   },
     ],
   },
   {

@@ -16,6 +16,7 @@ import reportRoutes from "./routes/report.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import pricelistRoutes from "./routes/pricelist.routes.js";
+import quotationRoutes from "./routes/quotation.routes.js";
 import errorHandler from "./middlewares/errorHandler.middleware.js";
 
 const app = express();
@@ -84,6 +85,7 @@ app.use("/api/v1/reports", reportRoutes);
 app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/pricelists", pricelistRoutes);
+app.use("/api/v1/quotation-templates", quotationRoutes);
 
 // ── 404 Handler ─────────────────────────────────────────────────────────────
 
