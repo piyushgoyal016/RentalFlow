@@ -277,9 +277,20 @@ export default function LoginPage() {
                 )}
 
                 {activeTab === "vendor" && (
-                  <p className="text-center text-xs text-slate-400 dark:text-slate-500">
-                    Admin access is restricted to authorized personnel only.
-                  </p>
+                  <div className="text-center space-y-2">
+                    <p className="text-xs text-slate-400 dark:text-slate-500">
+                      Admin access is restricted to authorized personnel only.
+                    </p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      Want to become a vendor?{" "}
+                      <Link
+                        to="/vendor-register"
+                        className="font-semibold text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors"
+                      >
+                        Apply here
+                      </Link>
+                    </p>
+                  </div>
                 )}
               </div>
             </motion.div>

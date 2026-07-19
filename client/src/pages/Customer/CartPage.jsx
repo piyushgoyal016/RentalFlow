@@ -177,21 +177,18 @@ export default function CartPage() {
   // Checkout order submission
   const executeOrderCheckout = async () => {
     try {
-      let firstOrderId = "";
-      for (const item of cart) {
-        const payload = {
-          product: { id: item.id, dailyRate: item.dailyRate, securityDeposit: item.securityDeposit },
-          startDate: `${pickupDate}T${pickupTime}:00`,
-          endDate: `${returnDate}T${returnTime}:00`,
-          duration: daysRented,
-        };
-        const res = await rentalService.createRental(payload);
-        if (res && res.id && !firstOrderId) {
-          firstOrderId = res.id;
-        }
-      }
+      const payload = {
+        pickupDate: new Date(`${pickupDate}T${pickupTime}:00`).toISOString(),
+        returnDate: new Date(`${returnDate}T${returnTime}:00`).toISOString(),
+        items: cart.map(item => ({
+          productId: item.id,
+          quantity: quantities[item.id] || 1
+        }))
+      };
 
-      const generatedOrderId = firstOrderId || `SO${Math.floor(100000 + Math.random() * 900000)}`;
+      const res = await rentalService.createRental(payload);
+      
+      const generatedOrderId = res?.id || `SO${Math.floor(100000 + Math.random() * 900000)}`;
       setPlacedOrderId(generatedOrderId);
 
       // Clear cart
@@ -210,7 +207,8 @@ export default function CartPage() {
   const handlePrintInvoice = () => {
     if (placedOrderId) {
       const baseURL = "http://localhost:5000/api/v1";
-      window.open(`${baseURL}/payments/${placedOrderId}/print`, "_blank");
+      const token = localStorage.getItem("rentflow_token");
+      window.open(`${baseURL}/payments/${placedOrderId}/print?token=${token}`, "_blank");
     } else {
       window.print();
     }

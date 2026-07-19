@@ -7,24 +7,73 @@ import {
 } from "lucide-react";
 import PageHeader from "@/components/admin/shared/PageHeader";
 import StatusBadge from "@/components/admin/shared/StatusBadge";
+import { getCustomers, createCustomer } from "@/services/adminService";
+import { toast } from "sonner";
 
-const MOCK_CUSTOMERS = [
-  { id: "1", firstName: "Rahul",   lastName: "Sharma",   email: "rahul@email.com",   phone: "+91 98765 43210", city: "Mumbai",    isActive: true,  totalRentals: 12, totalSpend: 48200, joinedAt: "2024-01-15", lastRental: "2025-07-10" },
-  { id: "2", firstName: "Priya",   lastName: "Patel",    email: "priya@email.com",   phone: "+91 87654 32109", city: "Pune",      isActive: true,  totalRentals: 8,  totalSpend: 31500, joinedAt: "2024-02-20", lastRental: "2025-07-08" },
-  { id: "3", firstName: "Amit",    lastName: "Verma",    email: "amit@email.com",    phone: "+91 76543 21098", city: "Delhi",     isActive: true,  totalRentals: 15, totalSpend: 62000, joinedAt: "2023-11-05", lastRental: "2025-07-14" },
-  { id: "4", firstName: "Sunita",  lastName: "Joshi",    email: "sunita@email.com",  phone: "+91 65432 10987", city: "Bangalore", isActive: false, totalRentals: 5,  totalSpend: 18000, joinedAt: "2024-05-12", lastRental: "2025-06-20" },
-  { id: "5", firstName: "Karan",   lastName: "Malhotra", email: "karan@email.com",   phone: "+91 54321 09876", city: "Chennai",   isActive: true,  totalRentals: 20, totalSpend: 84500, joinedAt: "2023-08-30", lastRental: "2025-07-16" },
-  { id: "6", firstName: "Anita",   lastName: "Singh",    email: "anita@email.com",   phone: "+91 43210 98765", city: "Hyderabad", isActive: true,  totalRentals: 9,  totalSpend: 37000, joinedAt: "2024-03-18", lastRental: "2025-07-12" },
-  { id: "7", firstName: "Vikas",   lastName: "Kumar",    email: "vikas@email.com",   phone: "+91 32109 87654", city: "Kolkata",   isActive: true,  totalRentals: 11, totalSpend: 44200, joinedAt: "2024-01-28", lastRental: "2025-07-05" },
-  { id: "8", firstName: "Meera",   lastName: "Nair",     email: "meera@email.com",   phone: "+91 21098 76543", city: "Ahmedabad", isActive: false, totalRentals: 3,  totalSpend: 9800,  joinedAt: "2024-06-10", lastRental: "2025-05-15" },
-];
+function AddCustomerDrawer({ onClose, onSave }) {
+  const [formData, setFormData] = useState({ firstName: "", lastName: "", email: "", password: "", phone: "" });
+  const [loading, setLoading] = useState(false);
 
-const RENTAL_HISTORY = [
-  { id: "R-2048", product: "Canon EOS R5",    status: "ACTIVE",    startDate: "Jul 10", endDate: "Jul 17", amount: 10500 },
-  { id: "R-2031", product: "DJI Mavic Pro 3", status: "COMPLETED", startDate: "Jun 15", endDate: "Jun 18", amount: 7500  },
-  { id: "R-2017", product: "Sony A7 IV",      status: "OVERDUE",   startDate: "Jun 01", endDate: "Jun 05", amount: 4800  },
-];
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await onSave({ ...formData, role: "CUSTOMER" });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  return (
+    <div>
+      <div className="drawer-overlay" onClick={onClose} />
+      <motion.div
+        initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        className="drawer-panel w-full max-w-md p-6 flex flex-col"
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">Add Customer</h2>
+          <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+            <X className="w-5 h-5 text-slate-500" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col gap-4 overflow-y-auto">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">First Name *</label>
+              <input required value={formData.firstName} onChange={e => setFormData({ ...formData, firstName: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Last Name *</label>
+              <input required value={formData.lastName} onChange={e => setFormData({ ...formData, lastName: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email *</label>
+            <input type="email" required value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Password *</label>
+            <input type="password" required value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Phone</label>
+            <input value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+          </div>
+          
+          <div className="mt-auto pt-6">
+            <button disabled={loading} className="w-full py-3 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-medium transition-colors">
+              {loading ? "Saving..." : "Create Customer"}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
 function CustomerDrawer({ customer, onClose }) {
   const [tab, setTab] = useState("rentals");
 
@@ -62,7 +111,7 @@ function CustomerDrawer({ customer, onClose }) {
                     <Phone className="w-3.5 h-3.5" /> {customer.phone}
                   </div>
                   <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                    <MapPin className="w-3.5 h-3.5" /> {customer.city}
+                    <MapPin className="w-3.5 h-3.5" /> {customer.city || "N/A"}
                   </div>
                 </div>
               </div>
@@ -71,9 +120,9 @@ function CustomerDrawer({ customer, onClose }) {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-3 mt-5">
               {[
-                { label: "Total Rentals", value: customer.totalRentals, icon: Package },
-                { label: "Total Spend",   value: `₹${customer.totalSpend.toLocaleString()}`, icon: CreditCard },
-                { label: "Member Since",  value: customer.joinedAt,     icon: Calendar },
+                { label: "Total Rentals", value: customer.totalRentals || 0, icon: Package },
+                { label: "Total Spend",   value: `₹${(customer.totalSpend || 0).toLocaleString()}`, icon: CreditCard },
+                { label: "Member Since",  value: customer.joinedAt || new Date(customer.createdAt).toLocaleDateString() || "N/A", icon: Calendar },
               ].map(s => (
                 <div key={s.label} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 text-center">
                   <p className="text-xs text-slate-400 mb-1">{s.label}</p>
@@ -102,17 +151,17 @@ function CustomerDrawer({ customer, onClose }) {
 
           {/* Tab content */}
           <div className="p-4 space-y-3">
-            {tab === "rentals" && RENTAL_HISTORY.map(r => (
+            {tab === "rentals" && (customer.rentals || []).map(r => (
               <div key={r.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-mono text-slate-400">{r.id}</span>
                     <StatusBadge status={r.status} />
                   </div>
-                  <p className="text-sm font-medium text-slate-800 dark:text-slate-200 mt-1 truncate">{r.product}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">{r.startDate} → {r.endDate}</p>
+                  <p className="text-sm font-medium text-slate-800 dark:text-slate-200 mt-1 truncate">{r.product || r.items?.[0]?.product?.name || "Multiple Items"}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{r.startDate || new Date(r.pickupDate).toLocaleDateString()} → {r.endDate || new Date(r.returnDate).toLocaleDateString()}</p>
                 </div>
-                <p className="font-bold text-slate-900 dark:text-white text-sm">₹{r.amount.toLocaleString()}</p>
+                <p className="font-bold text-slate-900 dark:text-white text-sm">₹{(r.amount || r.totalCost || 0).toLocaleString()}</p>
               </div>
             ))}
             {tab === "payments" && (
@@ -129,7 +178,7 @@ function CustomerDrawer({ customer, onClose }) {
 }
 
 export default function CustomersPage() {
-  const [customers, setCustomers] = useState(MOCK_CUSTOMERS);
+  const [customers, setCustomers] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [search, setSearch]       = useState("");
   const [filter, setFilter]       = useState("all");
@@ -137,7 +186,40 @@ export default function CustomersPage() {
   const [page, setPage]           = useState(1);
   const PER_PAGE = 6;
 
-  useEffect(() => { setTimeout(() => setLoading(false), 700); }, []);
+  const [showAdd, setShowAdd]     = useState(false);
+
+  const fetchCustomers = async () => {
+    setLoading(true);
+    try {
+      const response = await getCustomers({ role: "CUSTOMER" });
+      if (response.data?.data) {
+        setCustomers(response.data.data);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to load customers");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  const handleAddCustomer = async (data) => {
+    try {
+      const response = await createCustomer(data);
+      if (response.data?.success) {
+        toast.success("Customer created successfully");
+        setShowAdd(false);
+        fetchCustomers();
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(error.response?.data?.message || "Failed to create customer");
+    }
+  };
 
   const filtered = customers.filter(c => {
     const name = `${c.firstName} ${c.lastName}`.toLowerCase();
@@ -156,7 +238,7 @@ export default function CustomersPage() {
         subtitle="Manage and view all registered customers"
         breadcrumbs={["Admin", "Customers"]}
         action={
-          <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium shadow-sm transition-all">
+          <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium shadow-sm transition-all">
             <Plus className="w-4 h-4" /> Add Customer
           </button>
         }
@@ -260,10 +342,10 @@ export default function CustomersPage() {
                       <p className="text-xs mt-0.5">{c.phone}</p>
                     </div>
                   </td>
-                  <td className="text-sm text-slate-600 dark:text-slate-300">{c.city}</td>
-                  <td className="font-medium text-slate-900 dark:text-white">{c.totalRentals}</td>
-                  <td className="font-medium text-success-600">₹{c.totalSpend.toLocaleString()}</td>
-                  <td className="text-sm text-slate-500 dark:text-slate-400">{c.lastRental}</td>
+                  <td className="text-sm text-slate-600 dark:text-slate-300">{c.city || "N/A"}</td>
+                  <td className="font-medium text-slate-900 dark:text-white">{c.totalRentals || 0}</td>
+                  <td className="font-medium text-success-600">₹{(c.totalSpend || 0).toLocaleString()}</td>
+                  <td className="text-sm text-slate-500 dark:text-slate-400">{c.lastRental || "Never"}</td>
                   <td><StatusBadge status={c.isActive ? "ACTIVE" : "CANCELLED"} /></td>
                   <td onClick={e => e.stopPropagation()}>
                     <button
@@ -321,6 +403,14 @@ export default function CustomersPage() {
       {/* Drawer */}
       <AnimatePresence>
         {drawer && <CustomerDrawer customer={drawer} onClose={() => setDrawer(null)} />}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showAdd && (
+          <AddCustomerDrawer
+            onClose={() => setShowAdd(false)}
+            onSave={handleAddCustomer}
+          />
+        )}
       </AnimatePresence>
     </div>
   );

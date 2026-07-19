@@ -78,3 +78,16 @@ export const updateUser = async (id, updateData) => {
   });
 };
 
+export const findAllUsers = async (roleName) => {
+  const where = {};
+  if (roleName) {
+    where.role = { name: roleName };
+  }
+  return prisma.user.findMany({
+    where,
+    include: {
+      role: true,
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+};

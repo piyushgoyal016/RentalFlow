@@ -6,10 +6,6 @@ import StatusBadge from "@/components/admin/shared/StatusBadge";
 import { getDeposits, refundDeposit } from "@/services/adminService";
 import { toast } from "sonner";
 
-const MOCK_DEPOSITS = [
-  { id: "DEP-3021", rentalId: "R-2051", customer: "Rahul Sharma",   amount: 25000, isRefunded: false, refundAmount: null,  heldSince: "Jul 15, 2025" },
-  { id: "DEP-3020", rentalId: "R-2050", customer: "Priya Patel",    amount: 40000, isRefunded: false, refundAmount: null,  heldSince: "Jul 14, 2025" },
-];
 
 export default function DepositsPage() {
   const [deposits, setDeposits] = useState([]);
@@ -35,8 +31,8 @@ export default function DepositsPage() {
       }
     } catch (err) {
       console.error(err);
-      toast.error("Failed to load deposits from server, using fallback");
-      setDeposits(MOCK_DEPOSITS);
+      toast.error("Failed to load deposits from server");
+      setDeposits([]);
     } finally {
       setLoading(false);
     }

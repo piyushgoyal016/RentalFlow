@@ -1,21 +1,12 @@
 import { prisma } from "../config/db.js";
 
 export const getDashboardStats = async () => {
-  const [
-    activeRentals,
-    customerCount,
-    productCount,
-    totalRevenue,
-    depositsHeld,
-    totalLateFees
-  ] = await Promise.all([
-    prisma.rentalOrder.count({ where: { status: "ACTIVE" } }),
-    prisma.user.count({ where: { role: { name: "CUSTOMER" } } }),
-    prisma.product.count(),
-    prisma.payment.aggregate({ _sum: { amount: true }, where: { status: "COMPLETED" } }),
-    prisma.securityDeposit.aggregate({ _sum: { amount: true }, where: { isRefunded: false } }),
-    prisma.lateFee.aggregate({ _sum: { penaltyAmount: true }, where: { isPaid: false } })
-  ]);
+  const activeRentals = await prisma.rentalOrder.count({ where: { status: "ACTIVE" } });
+  const customerCount = await prisma.user.count({ where: { role: { name: "CUSTOMER" } } });
+  const productCount = await prisma.product.count();
+  const totalRevenue = await prisma.payment.aggregate({ _sum: { amount: true }, where: { status: "COMPLETED" } });
+  const depositsHeld = await prisma.securityDeposit.aggregate({ _sum: { amount: true }, where: { isRefunded: false } });
+  const totalLateFees = await prisma.lateFee.aggregate({ _sum: { penaltyAmount: true }, where: { isPaid: false } });
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -36,9 +27,9 @@ export const getDashboardStats = async () => {
     activeRentals,
     customerCount,
     productCount,
-    revenue: totalRevenue._sum.amount || 0,
-    depositsHeld: depositsHeld._sum.amount || 0,
-    lateFeesPending: totalLateFees._sum.penaltyAmount || 0,
+    revenue: totalRevenue._sum?.amount || 0,
+    depositsHeld: depositsHeld._sum?.amount || 0,
+    lateFeesPending: totalLateFees._sum?.penaltyAmount || 0,
     dueToday,
     upcomingReturns: dueToday // simplified
   };

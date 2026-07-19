@@ -34,6 +34,19 @@ enum AddressType {
   BOTH
 }
 
+enum KYCStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum ProductCondition {
+  NEW
+  LIKE_NEW
+  GOOD
+  FAIR
+}
+
 // ---------------------------------------------------------------------------
 // IDENTITY & ACCESS MANAGEMENT
 // ---------------------------------------------------------------------------
@@ -57,9 +70,14 @@ model User {
   deletedAt DateTime?
 
   // Vendor Details
-  companyName String?
-  companyLogo String?
-  gstNo       String?
+  companyName    String?
+  companyLogo    String?
+  gstNo          String?
+  kycStatus      KYCStatus @default(PENDING)
+  verifiedAt     DateTime?
+  govIdUrl       String?
+  taxDocumentUrl String?
+  storeLocations StoreLocation[]
 
   roleId String
   role   Role   @relation(fields: [roleId], references: [id], onDelete: Restrict)
@@ -93,7 +111,32 @@ model Address {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  rentalOrdersShipping RentalOrder[] @relation("ShippingAddress")
+
   @@index([userId])
+}
+
+model StoreLocation {
+  id        String   @id @default(uuid())
+  vendorId  String
+  vendor    User     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  name      String
+  street    String
+  city      String
+  state     String
+  zipCode   String
+  country   String   @default("India")
+  latitude  Float?
+  longitude Float?
+  isDefault Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  
+  rentalOrdersPickup RentalOrder[] @relation("PickupLocation")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([vendorId])
 }
 
 model TokenBlacklist {
@@ -136,6 +179,8 @@ model Product {
   qrCode            String?   @unique
   isAvailable       Boolean   @default(true)
   isPublished       Boolean   @default(false)
+  isFeatured        Boolean   @default(false)
+  condition         ProductCondition @default(GOOD)
   rentalPricePerDay Float
   depositAmount     Float
   stockQuantity     Int       @default(1)
@@ -258,6 +303,12 @@ model RentalOrder {
   pickupDate DateTime
   returnDate DateTime
 
+  shippingAddressId String?
+  shippingAddress   Address? @relation("ShippingAddress", fields: [shippingAddressId], references: [id])
+
+  pickupLocationId String?
+  pickupLocation   StoreLocation? @relation("PickupLocation", fields: [pickupLocationId], references: [id])
+
   totalCost      Float
   discountAmount Float @default(0)
   finalCost      Float @default(0)
@@ -269,6 +320,7 @@ model RentalOrder {
   payment      Payment?
   deposit      SecurityDeposit?
   returnInspec ReturnInspection?
+  invoice      Invoice?
 
   @@index([userId])
   @@index([couponId])
@@ -295,8 +347,25 @@ model Payment {
   amount        Float
   status        PaymentStatus @default(PENDING)
   invoiceUrl    String?
+  invoice       Invoice?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+}
+
+model Invoice {
+  id            String   @id @default(uuid())
+  invoiceNumber String   @unique
+  paymentId     String   @unique
+  payment       Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  rentalOrderId String   @unique
+  rentalOrder   RentalOrder @relation(fields: [rentalOrderId], references: [id], onDelete: Cascade)
+  issueDate     DateTime @default(now())
+  dueDate       DateTime?
+  subtotal      Float
+  taxAmount     Float    @default(0)
+  totalAmount   Float
+  pdfUrl        String?
+  createdAt     DateTime @default(now())
 }
 
 model SecurityDeposit {

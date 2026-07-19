@@ -1,8 +1,10 @@
-export const collectDepositSchema = {
-  rentalOrderId: { required: true },
-  amount: { required: true }
-};
+import { z } from "zod";
 
-export const refundDepositSchema = {
-  refundAmount: { required: true }
-};
+export const collectDepositSchema = z.object({
+  rentalOrderId: z.string().uuid(),
+  amount: z.number().positive()
+});
+
+export const refundDepositSchema = z.object({
+  refundAmount: z.number().positive()
+});

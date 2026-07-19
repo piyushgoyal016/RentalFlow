@@ -13,10 +13,6 @@ const STATUS_ICONS = {
   REFUNDED:  <RefreshCw className="w-4 h-4 text-primary-500" />,
 };
 
-const MOCK_PAYMENTS = [
-  { id: "PAY-5021", rentalId: "R-2051", customer: "Rahul Sharma",  amount: 10500, status: "COMPLETED", method: "UPI",         date: "Jul 15, 2025", invoice: "#INV-5021" },
-  { id: "PAY-5020", rentalId: "R-2050", customer: "Priya Patel",   amount: 7500,  status: "PENDING",   method: "—",           date: "Jul 14, 2025", invoice: "#INV-5020" },
-];
 
 export default function PaymentsPage() {
   const [payments, setPayments] = useState([]);
@@ -43,8 +39,8 @@ export default function PaymentsPage() {
       }
     } catch (err) {
       console.error(err);
-      toast.error("Failed to load payments from server, using fallback");
-      setPayments(MOCK_PAYMENTS);
+      toast.error("Failed to load payments from server");
+      setPayments([]);
     } finally {
       setLoading(false);
     }
@@ -70,7 +66,8 @@ export default function PaymentsPage() {
 
   const handlePrintInvoice = (rentalId) => {
     const baseURL = "http://localhost:5000/api/v1";
-    window.open(`${baseURL}/payments/${rentalId}/print`, "_blank");
+    const token = localStorage.getItem("rentflow_token");
+    window.open(`${baseURL}/payments/${rentalId}/print?token=${token}`, "_blank");
   };
 
   const filtered = payments.filter(p => {

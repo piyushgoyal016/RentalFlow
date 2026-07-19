@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { notifications as mockNotifications } from "@/data/mockData";
+import { useState, useEffect } from "react";
+import { notificationService } from "@/services/notificationService";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,22 @@ const iconMap = {
 };
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState(mockNotifications);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const data = await notificationService.getMyNotifications();
+        setNotifications(data || []);
+      } catch (err) {
+        console.error("Failed to load notifications", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchNotifications();
+  }, []);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -68,7 +83,9 @@ export default function NotificationsPage() {
           )}
         </div>
 
-        {notifications.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-12 text-slate-500">Loading notifications...</div>
+        ) : notifications.length === 0 ? (
           <EmptyState
             icon={Bell}
             title="No notifications"

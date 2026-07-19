@@ -104,7 +104,7 @@ export default function Sidebar({ collapsed, onToggle }) {
               </div>
               <div className="overflow-hidden">
                 <p className="text-[15px] font-bold text-slate-900 dark:text-white leading-none">RentFlow</p>
-                <p className="text-[10px] text-slate-400 mt-0.5">Admin Portal</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">{isVendor ? "Vendor Portal" : "Admin Portal"}</p>
               </div>
             </motion.div>
           )}

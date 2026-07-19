@@ -2,30 +2,44 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Search, Package, AlertTriangle, TrendingDown } from "lucide-react";
 import PageHeader from "@/components/admin/shared/PageHeader";
-
-const MOCK_INVENTORY = [
-  { id: "1", name: "Canon EOS R5",       category: "Electronics",    stock: 3,  minStock: 2, available: 2, rented: 1, image: "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=300&q=80" },
-  { id: "2", name: "DJI Mavic Pro 3",    category: "Electronics",    stock: 2,  minStock: 1, available: 2, rented: 0, image: "https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=300&q=80" },
-  { id: "3", name: "Party Tent 6-Person",category: "Party Supplies", stock: 8,  minStock: 3, available: 5, rented: 3, image: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=300&q=80" },
-  { id: "4", name: "Honda Activa 6G",    category: "Vehicles",       stock: 5,  minStock: 2, available: 0, rented: 5, image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=300&q=80" },
-  { id: "5", name: "Power Washer Pro",   category: "Tools",          stock: 1,  minStock: 2, available: 1, rented: 0, image: "https://images.unsplash.com/photo-1558618047-3e69aa98e677?w=300&q=80" },
-  { id: "6", name: "Sony A7 IV",         category: "Electronics",    stock: 3,  minStock: 1, available: 1, rented: 2, image: "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=300&q=80" },
-];
-
+import { getProducts } from "@/services/adminService";
 export default function InventoryPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch]   = useState("");
 
-  useEffect(() => { setTimeout(() => setLoading(false), 700); }, []);
+  const [inventory, setInventory] = useState([]);
 
-  const filtered = MOCK_INVENTORY.filter(p =>
+  useEffect(() => {
+    getProducts().then(res => {
+      if(res.data) {
+        const rawData = Array.isArray(res.data?.data) ? res.data.data : (res.data?.data?.data || []);
+        const fetched = rawData.map(p => ({
+          id: p.id,
+          name: p.name,
+          category: p.category?.name || "Uncategorized",
+          stock: p.stockQuantity || 0,
+          minStock: 2,
+          available: p.stockQuantity || 0,
+          rented: 0,
+          image: p.imageUrl || "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=300&q=80"
+        }));
+        setInventory(fetched);
+      }
+      setLoading(false);
+    }).catch(err => {
+      console.error(err);
+      setLoading(false);
+    });
+  }, []);
+
+  const filtered = inventory.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) || p.category.toLowerCase().includes(search.toLowerCase())
   );
 
-  const totalItems     = MOCK_INVENTORY.reduce((s, p) => s + p.stock, 0);
-  const totalRented    = MOCK_INVENTORY.reduce((s, p) => s + p.rented, 0);
-  const lowStock       = MOCK_INVENTORY.filter(p => p.stock <= p.minStock).length;
-  const occupancyRate  = Math.round((totalRented / totalItems) * 100);
+  const totalItems     = inventory.reduce((s, p) => s + p.stock, 0);
+  const totalRented    = inventory.reduce((s, p) => s + p.rented, 0);
+  const lowStock       = inventory.filter(p => p.stock <= p.minStock).length;
+  const occupancyRate  = totalItems > 0 ? Math.round((totalRented / totalItems) * 100) : 0;
 
   return (
     <div>

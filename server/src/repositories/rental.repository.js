@@ -67,18 +67,54 @@ export const findById = async (id) => {
 };
 
 export const findAll = async (userId, role, skip = 0, take = 10) => {
-  const where = role === "CUSTOMER" ? { userId } : {};
+  const roleName = (typeof role === "string" ? role : role?.name || "").toUpperCase();
+  
+  let where = {};
+  if (roleName === "CUSTOMER") {
+    where = { userId };
+  } else if (roleName === "VENDOR") {
+    where = {
+      items: {
+        some: {
+          product: {
+            vendorId: userId
+          }
+        }
+      }
+    };
+  }
   
   const [data, totalCount] = await Promise.all([
     prisma.rentalOrder.findMany({
       where,
       skip,
       take,
-      include: {
-        items: {
-          include: { product: true }
+      select: {
+        id: true,
+        pickupDate: true,
+        returnDate: true,
+        totalCost: true,
+        deposit: {
+          select: {
+            amount: true
+          }
         },
-        user: true
+        status: true,
+        user: {
+          select: {
+            firstName: true,
+            lastName: true
+          }
+        },
+        items: {
+          select: {
+            product: {
+              select: {
+                name: true
+              }
+            }
+          }
+        }
       },
       orderBy: { createdAt: 'desc' }
     }),

@@ -4,18 +4,7 @@ import { Search, CheckSquare, X, AlertTriangle, Camera, RotateCcw, Clock, Dollar
 import PageHeader from "@/components/admin/shared/PageHeader";
 import StatusBadge from "@/components/admin/shared/StatusBadge";
 
-const MOCK_RETURNS = [
-  { id: "RT-1041", rentalId: "R-2041", customer: "Rahul Sharma",   product: "Canon EOS R5",     returnedAt: "Jul 15, 2025", isDamaged: false, lateFee: 0,    depositRefunded: true  },
-  { id: "RT-1040", rentalId: "R-2040", customer: "Priya Patel",    product: "DJI Mavic Pro 3",  returnedAt: "Jul 14, 2025", isDamaged: true,  lateFee: 2500, depositRefunded: false },
-  { id: "RT-1039", rentalId: "R-2039", customer: "Amit Verma",     product: "Sony A7 IV",       returnedAt: "Jul 12, 2025", isDamaged: false, lateFee: 1200, depositRefunded: true  },
-  { id: "RT-1038", rentalId: "R-2038", customer: "Karan Malhotra", product: "Power Washer Pro", returnedAt: "Jul 10, 2025", isDamaged: false, lateFee: 0,    depositRefunded: true  },
-];
 
-const ACTIVE_RENTALS = [
-  { id: "R-2048", customer: "Sunita Joshi",  product: "Camping Tent 2P", returnDate: "Jul 10 (4 days late)", status: "OVERDUE"  },
-  { id: "R-2050", customer: "Priya Patel",   product: "DJI Mavic Pro 3", returnDate: "Jul 21 (due today)",   status: "ACTIVE"   },
-  { id: "R-2051", customer: "Rahul Sharma",  product: "Canon EOS R5",    returnDate: "Jul 22",               status: "ACTIVE"   },
-];
 
 function ReturnChecklist({ rental, onClose }) {
   const [checklist, setChecklist] = useState({
@@ -208,14 +197,16 @@ function ReturnChecklist({ rental, onClose }) {
 }
 
 export default function ReturnsPage() {
-  const [loading, setLoading]   = useState(true);
+  const [returns, setReturns] = useState([]);
+  const [activeRentals, setActiveRentals] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch]     = useState("");
   const [checklist, setChecklist] = useState(null);
 
-  useEffect(() => { setTimeout(() => setLoading(false), 700); }, []);
+  useEffect(() => { setTimeout(() => setLoading(false), 800); }, []);
 
-  const filtered = MOCK_RETURNS.filter(r =>
-    r.customer.toLowerCase().includes(search.toLowerCase()) || r.rentalId.includes(search)
+  const filtered = returns.filter(r =>
+    r.customer.toLowerCase().includes(search.toLowerCase()) || r.rentalId.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -230,7 +221,7 @@ export default function ReturnsPage() {
       <div className="mb-8">
         <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Pending Returns</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {ACTIVE_RENTALS.map(r => (
+          {activeRentals.map(r => (
             <div key={r.id} className={`p-4 rounded-xl border-2 ${r.status === "OVERDUE" ? "border-danger-200 dark:border-red-800 bg-danger-50/50 dark:bg-red-900/10" : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"}`}>
               <div className="flex items-start justify-between mb-2">
                 <code className="text-xs font-mono text-primary-600 bg-primary-50 dark:bg-primary-900/30 px-2 py-0.5 rounded">{r.id}</code>

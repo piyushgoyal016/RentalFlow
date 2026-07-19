@@ -11,10 +11,16 @@ export const createPayment = async (rentalOrderId, amount) => {
   const rental = await rentalRepository.findById(rentalOrderId);
   if (!rental) throw new ApiError(404, "Rental order not found");
 
-  return await paymentRepository.create({
+  const payment = await paymentRepository.create({
     rentalOrderId,
-    amount
+    amount,
+    status: "COMPLETED",
+    invoiceUrl: `/api/v1/payments/${rentalOrderId}/print`
   });
+
+  await rentalRepository.updateStatus(rentalOrderId, "BOOKED");
+
+  return payment;
 };
 
 export const getPayment = async (id) => {

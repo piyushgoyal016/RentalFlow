@@ -5,12 +5,8 @@ import PageHeader from "@/components/admin/shared/PageHeader";
 import StatusBadge from "@/components/admin/shared/StatusBadge";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "sonner";
-
-const INITIAL_INVOICES = [
-  { id: "INV-9021", product: "Canon EOS R5", date: "2026-07-10", amount: 4500, deposit: 25000, status: "COMPLETED" },
-  { id: "INV-9022", product: "DJI Mavic Pro 3", date: "2026-07-12", amount: 7500, deposit: 40000, status: "COMPLETED" },
-  { id: "INV-9023", product: "Party Tent 6-Person", date: "2026-07-18", amount: 1500, deposit: 8000, status: "PENDING" }
-];
+import api from "@/services/api";
+import { rentalService } from "@/services/rentalService";
 
 function PaymentModal({ invoice, onClose, onConfirm }) {
   const [cardName, setCardName] = useState("");
@@ -91,14 +87,53 @@ function PaymentModal({ invoice, onClose, onConfirm }) {
 }
 
 export default function CustomerPaymentsPage() {
-  const [invoices, setInvoices] = useState(INITIAL_INVOICES);
+  const [invoices, setInvoices] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(null); // null | invoiceObj
   const [activeTab, setActiveTab] = useState("all");
 
-  const handleConfirmPayment = (id) => {
-    setInvoices(prev => prev.map(inv => inv.id === id ? { ...inv, status: "COMPLETED" } : inv));
-    toast.success("Payment completed successfully!");
-    setModal(null);
+  const fetchInvoices = async () => {
+    try {
+      setLoading(true);
+      const rentals = await rentalService.getMyRentals();
+      const mapped = rentals.map(r => ({
+        id: `INV-${r.id.substring(0, 8).toUpperCase()}`,
+        rentalOrderId: r.id,
+        product: r.product?.name || "Rental Item",
+        date: r.createdAt,
+        amount: (r.product?.dailyRate || 0) * (r.duration || 1),
+        deposit: r.product?.securityDeposit || 0,
+        status: r.paymentStatus.toUpperCase(),
+      }));
+      setInvoices(mapped);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load invoices");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInvoices();
+  }, []);
+
+  const handleConfirmPayment = async (id) => {
+    const invoice = invoices.find(inv => inv.id === id);
+    if (!invoice) return;
+
+    try {
+      await api.post("/payments", {
+        rentalOrderId: invoice.rentalOrderId,
+        amount: invoice.amount + invoice.deposit
+      });
+      toast.success("Payment completed successfully!");
+      setModal(null);
+      fetchInvoices();
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Failed to process payment");
+    }
   };
 
   const handleDownloadInvoice = (invoice) => {
@@ -170,6 +205,14 @@ export default function CustomerPaymentsPage() {
     if (activeTab === "completed") return inv.status === "COMPLETED";
     return true;
   });
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-8 flex items-center justify-center min-h-[60vh]">
+        <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-8">

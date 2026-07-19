@@ -28,3 +28,22 @@ export const changePassword = async (req, res, next) => {
     next(error);
   }
 };
+
+export const getAllUsers = async (req, res, next) => {
+  try {
+    const { role } = req.query;
+    const users = await userService.getAllUsers(role);
+    return res.status(200).json(new ApiResponse(200, users, "Users fetched successfully"));
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createUser = async (req, res, next) => {
+  try {
+    const user = await userService.createUser(req.body);
+    return res.status(201).json(new ApiResponse(201, user, "User created successfully"));
+  } catch (error) {
+    next(error);
+  }
+};

@@ -1,6 +1,8 @@
-export const processReturnSchema = {
-  rentalOrderId: { required: true },
-  isDamaged: { required: false }, // Boolean handled automatically in JS truthy, but typically we'd enforce type
-  damageReport: { required: false },
-  missingAccessories: { required: false }
-};
+import { z } from "zod";
+
+export const processReturnSchema = z.object({
+  rentalOrderId: z.string().uuid(),
+  isDamaged: z.boolean().optional().default(false),
+  damageReport: z.string().optional(),
+  missingAccessories: z.string().optional()
+});

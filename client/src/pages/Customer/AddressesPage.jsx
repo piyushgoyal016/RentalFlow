@@ -4,10 +4,7 @@ import { Plus, MapPin, Trash2, Edit2, Check, X, Building, Home } from "lucide-re
 import PageHeader from "@/components/admin/shared/PageHeader";
 import { toast } from "sonner";
 
-const INITIAL_ADDRESSES = [
-  { id: "addr-1", type: "Home", street: "102, Sunrise Apts, Linking Road", city: "Mumbai", state: "Maharashtra", zipCode: "400054", country: "India", isDefault: true },
-  { id: "addr-2", type: "Office", street: "4th Floor, Tech Hub, Hitech City", city: "Hyderabad", state: "Telangana", zipCode: "500081", country: "India", isDefault: false }
-];
+const INITIAL_ADDRESSES = [];
 
 function AddressModal({ address, onClose, onSave }) {
   const [type, setType] = useState(address?.type || "Home");

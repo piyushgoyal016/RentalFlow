@@ -7,36 +7,32 @@ import {
 } from "lucide-react";
 import PageHeader from "@/components/admin/shared/PageHeader";
 import StatusBadge from "@/components/admin/shared/StatusBadge";
-import { getRentals, updateRentalStatus } from "@/services/adminService";
+import { getRentals, updateRentalStatus, getCustomers, getProducts, createRental } from "@/services/adminService";
 import { toast } from "sonner";
 
-const MOCK_RENTALS = [
-  { id: "R-2051", customer: "Rahul Sharma",  products: ["Canon EOS R5"],        status: "ACTIVE",    pickupDate: "Jul 15, 2025", returnDate: "Jul 22, 2025", totalCost: 10500, deposit: 25000 },
-  { id: "R-2050", customer: "Priya Patel",   products: ["DJI Mavic Pro 3"],     status: "PENDING",   pickupDate: "Jul 18, 2025", returnDate: "Jul 21, 2025", totalCost: 7500,  deposit: 40000 },
-  { id: "R-2049", customer: "Amit Verma",    products: ["Sony A7 IV", "Tent"],  status: "COMPLETED", pickupDate: "Jul 10, 2025", returnDate: "Jul 14, 2025", totalCost: 6600,  deposit: 23000 },
-  { id: "R-2048", customer: "Sunita Joshi",  products: ["Power Washer Pro"],    status: "OVERDUE",   pickupDate: "Jul 05, 2025", returnDate: "Jul 10, 2025", totalCost: 4000,  deposit: 5000  },
-  { id: "R-2047", customer: "Karan Malhotra",products: ["Camping Tent 2P"],     status: "COMPLETED", pickupDate: "Jul 01, 2025", returnDate: "Jul 05, 2025", totalCost: 1200,  deposit: 3000  },
-  { id: "R-2046", customer: "Anita Singh",   products: ["Honda Activa 6G"],     status: "CANCELLED", pickupDate: "Jun 28, 2025", returnDate: "Jun 30, 2025", totalCost: 800,   deposit: 15000 },
-];
 
 // Multi-step Create Rental Wizard
 const WIZARD_STEPS = ["Customer", "Products", "Duration", "Review", "Confirm"];
 
-const MOCK_CUSTOMERS_SEARCH = [
-  { id: "1", name: "Rahul Sharma",  email: "rahul@email.com",  phone: "+91 98765 43210" },
-  { id: "2", name: "Priya Patel",   email: "priya@email.com",  phone: "+91 87654 32109" },
-  { id: "3", name: "Amit Verma",    email: "amit@email.com",   phone: "+91 76543 21098" },
-];
-
-const MOCK_PRODUCTS_SEARCH = [
-  { id: "1", name: "Canon EOS R5",    pricePerDay: 1500, deposit: 25000, available: true  },
-  { id: "2", name: "DJI Mavic Pro 3", pricePerDay: 2500, deposit: 40000, available: true  },
-  { id: "3", name: "Sony A7 IV",      pricePerDay: 1200, deposit: 20000, available: true  },
-  { id: "4", name: "Power Washer Pro",pricePerDay: 800,  deposit: 5000,  available: false },
-];
-
-function RentalWizard({ onClose }) {
+function RentalWizard({ onClose, onSuccess }) {
   const [step, setStep]       = useState(0);
+  const [customersList, setCustomersList] = useState([]);
+  const [productsList, setProductsList] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [cRes, pRes] = await Promise.all([getCustomers(), getProducts()]);
+        const usersArray = Array.isArray(cRes.data?.data) ? cRes.data.data : (cRes.data?.data?.data || []);
+        const prodsArray = Array.isArray(pRes.data?.data) ? pRes.data.data : (pRes.data?.data?.data || []);
+        setCustomersList(usersArray.filter(u => u.role?.name === "CUSTOMER" || u.role === "CUSTOMER"));
+        setProductsList(prodsArray);
+      } catch (err) {
+        toast.error("Failed to load wizard data");
+      }
+    };
+    fetchData();
+  }, []);
   const [customer, setCustomer] = useState(null);
   const [products, setProducts] = useState([]);
   const [pickupDate, setPickup] = useState("");
@@ -47,8 +43,8 @@ function RentalWizard({ onClose }) {
   const days = pickupDate && returnDate
     ? Math.max(1, Math.ceil((new Date(returnDate) - new Date(pickupDate)) / 86400000))
     : 0;
-  const subtotal = products.reduce((s, p) => s + p.pricePerDay * days, 0);
-  const totalDeposit = products.reduce((s, p) => s + p.deposit, 0);
+  const subtotal = products.reduce((s, p) => s + (p.rentalPricePerDay || 0) * days, 0);
+  const totalDeposit = products.reduce((s, p) => s + (p.depositAmount || 0), 0);
 
   const toggleProduct = (p) => {
     setProducts(prev =>
@@ -58,9 +54,20 @@ function RentalWizard({ onClose }) {
 
   const handleSubmit = async () => {
     setSubmitting(true);
-    await new Promise(r => setTimeout(r, 1500));
-    setSubmitting(false);
-    setDone(true);
+    try {
+      await createRental({
+        userId: customer.id,
+        items: products.map(p => ({ productId: p.id, quantity: 1 })),
+        pickupDate: pickupDate + "T00:00:00Z",
+        returnDate: returnDate + "T00:00:00Z",
+      });
+      setDone(true);
+      if (onSuccess) onSuccess();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to create rental");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (done) return (
@@ -142,7 +149,7 @@ function RentalWizard({ onClose }) {
               {step === 0 && (
                 <div className="space-y-3">
                   <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Select a customer</p>
-                  {MOCK_CUSTOMERS_SEARCH.map(c => (
+                  {customersList.map(c => (
                     <div
                       key={c.id}
                       onClick={() => setCustomer(c)}
@@ -153,10 +160,10 @@ function RentalWizard({ onClose }) {
                       }`}
                     >
                       <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                        {c.name.split(" ").map(n => n[0]).join("")}
+                        {(c.firstName?.[0] || "") + (c.lastName?.[0] || "")}
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium text-slate-900 dark:text-white">{c.name}</p>
+                        <p className="font-medium text-slate-900 dark:text-white">{c.firstName} {c.lastName}</p>
                         <p className="text-xs text-slate-400">{c.email} · {c.phone}</p>
                       </div>
                       {customer?.id === c.id && <Check className="w-5 h-5 text-primary-600" />}
@@ -169,12 +176,12 @@ function RentalWizard({ onClose }) {
               {step === 1 && (
                 <div className="space-y-3">
                   <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">Select products to rent</p>
-                  {MOCK_PRODUCTS_SEARCH.map(p => (
+                  {productsList.map(p => (
                     <div
                       key={p.id}
-                      onClick={() => p.available && toggleProduct(p)}
+                      onClick={() => p.isAvailable && toggleProduct(p)}
                       className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
-                        !p.available ? "opacity-50 cursor-not-allowed border-slate-100 dark:border-slate-800" :
+                        !p.isAvailable ? "opacity-50 cursor-not-allowed border-slate-100 dark:border-slate-800" :
                         products.find(x => x.id === p.id)
                           ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20 cursor-pointer"
                           : "border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 cursor-pointer"
@@ -185,9 +192,9 @@ function RentalWizard({ onClose }) {
                       </div>
                       <div className="flex-1">
                         <p className="font-medium text-slate-900 dark:text-white">{p.name}</p>
-                        <p className="text-xs text-slate-400">₹{p.pricePerDay}/day · Deposit ₹{p.deposit.toLocaleString()}</p>
+                        <p className="text-xs text-slate-400">₹{p.rentalPricePerDay}/day · Deposit ₹{p.depositAmount?.toLocaleString()}</p>
                       </div>
-                      {!p.available && <span className="badge badge-overdue">Unavailable</span>}
+                      {!p.isAvailable && <span className="badge badge-overdue">Unavailable</span>}
                     </div>
                   ))}
                 </div>
@@ -232,7 +239,7 @@ function RentalWizard({ onClose }) {
                     <h4 className="font-medium text-slate-900 dark:text-white text-sm">Rental Summary</h4>
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-500">Customer</span>
-                      <span className="font-medium text-slate-900 dark:text-white">{customer?.name}</span>
+                      <span className="font-medium text-slate-900 dark:text-white">{customer?.firstName} {customer?.lastName}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-slate-500">Duration</span>
@@ -250,7 +257,7 @@ function RentalWizard({ onClose }) {
                       {products.map(p => (
                         <div key={p.id} className="flex justify-between text-sm">
                           <span className="text-slate-600 dark:text-slate-300">{p.name} × {days}d</span>
-                          <span className="font-medium text-slate-900 dark:text-white">₹{(p.pricePerDay * days).toLocaleString()}</span>
+                          <span className="font-medium text-slate-900 dark:text-white">₹{((p.rentalPricePerDay || 0) * days).toLocaleString()}</span>
                         </div>
                       ))}
                     </div>
@@ -340,23 +347,24 @@ export default function RentalsPage() {
     try {
       setLoading(true);
       const response = await getRentals();
-      if (response.data?.success) {
-        const dbRentals = response.data.data.map(r => ({
+      if (response.data) {
+        const rawData = Array.isArray(response.data?.data) ? response.data.data : (response.data?.data?.data || []);
+        const dbRentals = rawData.map(r => ({
           id: r.id,
           customer: r.user ? `${r.user.firstName} ${r.user.lastName}` : "Customer",
           products: r.items?.map(item => item.product?.name || "Product") || [],
           pickupDate: new Date(r.pickupDate).toLocaleDateString(),
           returnDate: new Date(r.returnDate).toLocaleDateString(),
           totalCost: r.totalCost,
-          deposit: r.depositAmount || 0,
+          deposit: r.deposit?.amount || 0,
           status: r.status,
         }));
         setRentals(dbRentals);
       }
     } catch (err) {
       console.error(err);
-      toast.error("Failed to fetch rentals from server, using fallback");
-      setRentals(MOCK_RENTALS);
+      toast.error("Failed to fetch rentals from server");
+      setRentals([]);
     } finally {
       setLoading(false);
     }
@@ -381,7 +389,8 @@ export default function RentalsPage() {
 
   const handlePrintInvoice = (id) => {
     const baseURL = "http://localhost:5000/api/v1";
-    window.open(`${baseURL}/payments/${id}/print`, "_blank");
+    const token = localStorage.getItem("rentflow_token");
+    window.open(`${baseURL}/payments/${id}/print?token=${token}`, "_blank");
   };
 
   const filtered = rentals.filter(r => {
@@ -512,7 +521,7 @@ export default function RentalsPage() {
 
       {/* Wizard */}
       <AnimatePresence>
-        {showWizard && <RentalWizard onClose={() => setShowWizard(false)} />}
+        {showWizard && <RentalWizard onClose={() => setShowWizard(false)} onSuccess={() => { fetchRentals(); setShowWizard(false); }} />}
       </AnimatePresence>
     </div>
   );

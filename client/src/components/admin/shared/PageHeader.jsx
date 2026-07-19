@@ -1,7 +1,14 @@
 import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 export default function PageHeader({ title, subtitle, breadcrumbs = [], action }) {
+  const { user } = useAuth();
+  const roleName = user?.role?.toUpperCase() === "VENDOR" ? "Vendor" : "Admin";
+  
+  const displayBreadcrumbs = breadcrumbs.map(crumb => 
+    crumb === "Admin" ? roleName : crumb
+  );
   return (
     <motion.div
       initial={{ opacity: 0, y: -8 }}
@@ -12,10 +19,10 @@ export default function PageHeader({ title, subtitle, breadcrumbs = [], action }
       {/* Breadcrumbs */}
       {breadcrumbs.length > 0 && (
         <nav className="flex items-center gap-1.5 text-sm text-slate-400 dark:text-slate-500 mb-3">
-          {breadcrumbs.map((crumb, i) => (
+          {displayBreadcrumbs.map((crumb, i) => (
             <span key={i} className="flex items-center gap-1.5">
               {i > 0 && <ChevronRight className="w-3.5 h-3.5" />}
-              <span className={i === breadcrumbs.length - 1 ? "text-slate-700 dark:text-slate-300 font-medium" : "hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer transition-colors"}>
+              <span className={i === displayBreadcrumbs.length - 1 ? "text-slate-700 dark:text-slate-300 font-medium" : "hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer transition-colors"}>
                 {crumb}
               </span>
             </span>

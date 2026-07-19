@@ -7,19 +7,26 @@ import ApiError from "../utils/ApiError.js";
  */
 export const requireAuth = async (req, res, next) => {
   try {
+    let token = req.query.token;
     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      throw new ApiError(401, "Authentication token is missing or invalid");
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
     }
 
-    const token = authHeader.split(" ")[1];
+    if (!token) {
+      throw new ApiError(401, "Authentication token is missing or invalid");
+    }
     
     let decoded;
     try {
       decoded = verifyAccessToken(token);
     } catch (jwtError) {
       throw new ApiError(401, "Authentication token has expired or is invalid");
+    }
+
+    if (!decoded || !decoded.id) {
+      throw new ApiError(401, "Invalid token payload format");
     }
 
     // Verify user still exists and is active in database
@@ -36,7 +43,7 @@ export const requireAuth = async (req, res, next) => {
     req.user = {
       id: user.id,
       email: user.email,
-      role: user.role.name,
+      role: { name: user.role.name },
     };
 
     next();

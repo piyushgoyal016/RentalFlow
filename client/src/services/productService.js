@@ -1,5 +1,4 @@
 import api from "./api";
-import { products as mockProducts, categories as mockCategories } from "@/data/mockData";
 
 export const productService = {
   async getProducts(filters = {}) {
@@ -24,14 +23,6 @@ export const productService = {
             rating: 4.8,
             brand: p.brand || (p.vendor ? p.vendor.companyName : "RentFlow"),
           }));
-      } else {
-        // Fallback to mock products if database is empty (so the UI looks premium)
-        list = mockProducts.map(p => ({
-          ...p,
-          dailyRate: p.dailyRate || p.rentalPricePerDay,
-          securityDeposit: p.securityDeposit || p.depositAmount,
-          availableQuantity: p.availableQuantity || p.stockQuantity,
-        }));
       }
 
       // Apply search filter
@@ -77,14 +68,8 @@ export const productService = {
         totalPages,
       };
     } catch (err) {
-      console.warn("Backend products fetch failed, using fallback:", err);
-      // Fallback
-      return {
-        products: mockProducts.slice(0, 9),
-        total: mockProducts.length,
-        page: 1,
-        totalPages: Math.ceil(mockProducts.length / 9),
-      };
+      console.error("Backend products fetch failed:", err);
+      return { products: [], total: 0, page: 1, totalPages: 1 };
     }
   },
 
@@ -106,12 +91,11 @@ export const productService = {
           rating: 4.8,
         };
       }
+      throw new Error("Product not found");
     } catch (err) {
-      console.warn("Backend getProductById failed, using mock:", err);
+      console.error("Backend getProductById failed:", err);
+      throw err;
     }
-    const product = mockProducts.find((p) => p.id === id);
-    if (!product) throw new Error("Product not found");
-    return product;
   },
 
   async getCategories() {
@@ -121,9 +105,9 @@ export const productService = {
         return response.data.data;
       }
     } catch (err) {
-      console.warn("Backend categories fetch failed:", err);
+      console.error("Backend categories fetch failed:", err);
+      return [];
     }
-    return mockCategories;
   },
 
   async getProductsByCategory(slug) {
@@ -138,13 +122,10 @@ export const productService = {
           return { category: cat, products: catProducts };
         }
       }
+      throw new Error("Category not found");
     } catch (err) {
-      console.warn("Backend getProductsByCategory failed:", err);
+      console.error("Backend getProductsByCategory failed:", err);
+      throw err;
     }
-    // Fallback
-    const category = mockCategories.find((c) => c.slug === slug);
-    if (!category) throw new Error("Category not found");
-    const categoryProducts = mockProducts.filter((p) => p.categoryId === category.id);
-    return { category, products: categoryProducts };
   },
 };

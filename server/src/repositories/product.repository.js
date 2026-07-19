@@ -33,19 +33,31 @@ export const create = async (data) => {
 };
 
 export const findAll = async (skip = 0, take = 10) => {
+  const where = {
+    barcode: {
+      notIn: ['SECURITY_DEPOSIT_SERVICE', 'LATE_FEES_SERVICE']
+    }
+  };
   const [data, totalCount] = await Promise.all([
     prisma.product.findMany({
+      where,
       skip,
       take,
-      include: {
-        images: true,
-        variants: true,
-        category: true,
-        vendor: true
+      select: {
+        id: true,
+        name: true,
+        stockQuantity: true,
+        rentalPricePerDay: true,
+        depositAmount: true,
+        isPublished: true,
+        isAvailable: true,
+        category: {
+          select: { name: true }
+        }
       },
       orderBy: { createdAt: 'desc' }
     }),
-    prisma.product.count()
+    prisma.product.count({ where })
   ]);
 
   return { data, totalCount };

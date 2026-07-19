@@ -3,15 +3,6 @@ import { motion } from "framer-motion";
 import { Bell, Check, Trash2, Package, CreditCard, RotateCcw, AlertTriangle, Users } from "lucide-react";
 import PageHeader from "@/components/admin/shared/PageHeader";
 
-const MOCK_NOTIFS = [
-  { id: "1", type: "rental",   title: "New Rental Created",         message: "Rental #R-2052 created for Rahul Sharma", time: "2 min ago",  isRead: false },
-  { id: "2", type: "payment",  title: "Payment Received",           message: "₹10,500 received for Rental #R-2048",     time: "18 min ago", isRead: false },
-  { id: "3", type: "overdue",  title: "Overdue Rental Alert",       message: "Rental #R-2048 is 4 days overdue",        time: "1 hr ago",   isRead: false },
-  { id: "4", type: "return",   title: "Product Returned",           message: "Canon EOS R5 returned — no damage",       time: "3 hrs ago",  isRead: true  },
-  { id: "5", type: "customer", title: "New Customer Registered",    message: "Meera Nair joined RentFlow",              time: "5 hrs ago",  isRead: true  },
-  { id: "6", type: "overdue",  title: "Late Return Warning",        message: "Rental #R-2041 is 2 days overdue",        time: "8 hrs ago",  isRead: true  },
-  { id: "7", type: "payment",  title: "Deposit Refunded",           message: "₹20,000 refunded to Amit Verma",          time: "1 day ago",  isRead: true  },
-];
 
 const TYPE_CONFIG = {
   rental:   { icon: Package,       bg: "bg-primary-50 dark:bg-primary-900/20",    text: "text-primary-600 dark:text-primary-400"  },
@@ -21,8 +12,10 @@ const TYPE_CONFIG = {
   customer: { icon: Users,         bg: "bg-purple-50 dark:bg-purple-900/20",      text: "text-purple-600 dark:text-purple-400"    },
 };
 
+
+
 export default function NotificationsPage() {
-  const [notifs, setNotifs] = useState(MOCK_NOTIFS);
+  const [notifs, setNotifs] = useState([]);
   const [filter, setFilter] = useState("all");
 
   const filtered = notifs.filter(n => {

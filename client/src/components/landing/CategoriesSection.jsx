@@ -1,5 +1,6 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { categories } from "@/data/mockData";
+import { productService } from "@/services/productService";
 import { Laptop, Armchair, Car, Wrench, PartyPopper, Dumbbell } from "lucide-react";
 import { ArrowRight } from "lucide-react";
 
@@ -12,16 +13,24 @@ const iconMap = {
   Dumbbell,
 };
 
-const colorMap = {
-  "cat-1": "from-blue-500 to-indigo-600",
-  "cat-2": "from-amber-500 to-orange-600",
-  "cat-3": "from-emerald-500 to-teal-600",
-  "cat-4": "from-red-500 to-rose-600",
-  "cat-5": "from-purple-500 to-violet-600",
-  "cat-6": "from-cyan-500 to-sky-600",
-};
+const colorGradients = [
+  "from-blue-500 to-indigo-600",
+  "from-amber-500 to-orange-600",
+  "from-emerald-500 to-teal-600",
+  "from-red-500 to-rose-600",
+  "from-purple-500 to-violet-600",
+  "from-cyan-500 to-sky-600",
+];
 
 function CategoriesSection() {
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    productService.getCategories().then((data) => {
+      setCategories(data || []);
+    });
+  }, []);
+
   return (
     <section className="py-20 lg:py-28 bg-slate-50">
       <div className="container-app">
@@ -38,9 +47,9 @@ function CategoriesSection() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {categories.map((category) => {
-            const Icon = iconMap[category.icon] || Laptop;
-            const gradient = colorMap[category.id] || "from-primary-500 to-primary-600";
+          {categories.map((category, index) => {
+            const Icon = iconMap[category.name] || Laptop;
+            const gradient = colorGradients[index % colorGradients.length];
 
             return (
               <Link

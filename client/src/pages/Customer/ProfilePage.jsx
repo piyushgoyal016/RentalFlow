@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/context/AuthContext";
 import { profileService } from "@/services/profileService";
+import { rentalService } from "@/services/rentalService";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -16,8 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getInitials, formatDate, formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 import { User, Mail, Phone, MapPin, Calendar, Save, Shield, Key } from "lucide-react";
-import { rentals } from "@/data/mockData";
-
+import { useEffect } from "react";
 const profileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email"),
@@ -40,6 +40,22 @@ export default function ProfilePage() {
   const { user, updateProfile } = useAuth();
   const [saving, setSaving] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
+  const [rentals, setRentals] = useState([]);
+  const [loadingRentals, setLoadingRentals] = useState(true);
+
+  useEffect(() => {
+    const fetchRentals = async () => {
+      try {
+        const data = await rentalService.getMyRentals();
+        setRentals(data || []);
+      } catch (err) {
+        console.error("Failed to load rentals", err);
+      } finally {
+        setLoadingRentals(false);
+      }
+    };
+    fetchRentals();
+  }, []);
 
   const {
     register,
@@ -250,41 +266,47 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {rentals.map((rental) => (
-                    <div
-                      key={rental.id}
-                      className="flex items-center gap-4 p-4 rounded-lg bg-slate-50"
-                    >
-                      <img
-                        src={rental.product?.image}
-                        alt={rental.product?.name}
-                        className="w-14 h-14 rounded-lg object-cover"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-900 truncate">
-                          {rental.product?.name}
-                        </p>
-                        <div className="flex items-center gap-1 text-xs text-slate-400">
-                          <Calendar className="h-3 w-3" />
-                          {formatDate(rental.startDate)} - {formatDate(rental.endDate)}
+                  {loadingRentals ? (
+                    <div className="text-center py-4 text-slate-500">Loading rentals...</div>
+                  ) : rentals.length === 0 ? (
+                    <div className="text-center py-4 text-slate-500">No rental history found.</div>
+                  ) : (
+                    rentals.map((rental) => (
+                      <div
+                        key={rental.id}
+                        className="flex items-center gap-4 p-4 rounded-lg bg-slate-50"
+                      >
+                        <img
+                          src={rental.product?.image}
+                          alt={rental.product?.name}
+                          className="w-14 h-14 rounded-lg object-cover"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-slate-900 truncate">
+                            {rental.product?.name}
+                          </p>
+                          <div className="flex items-center gap-1 text-xs text-slate-400">
+                            <Calendar className="h-3 w-3" />
+                            {formatDate(rental.startDate)} - {formatDate(rental.endDate)}
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-sm font-bold text-primary-600">
+                            {formatCurrency(rental.totalAmount)}
+                          </p>
+                          <Badge
+                            variant={
+                              rental.status === "completed" ? "secondary" :
+                              rental.status === "overdue" ? "danger" : "success"
+                            }
+                            className="text-xs mt-1"
+                          >
+                            {rental.status}
+                          </Badge>
                         </div>
                       </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-sm font-bold text-primary-600">
-                          {formatCurrency(rental.totalAmount)}
-                        </p>
-                        <Badge
-                          variant={
-                            rental.status === "completed" ? "secondary" :
-                            rental.status === "overdue" ? "danger" : "success"
-                          }
-                          className="text-xs mt-1"
-                        >
-                          {rental.status}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -298,35 +320,41 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {deposits.map((rental) => (
-                    <div
-                      key={rental.id}
-                      className="flex items-center gap-4 p-4 rounded-lg bg-slate-50"
-                    >
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100">
-                        <Shield className="h-5 w-5 text-primary-600" />
+                  {loadingRentals ? (
+                    <div className="text-center py-4 text-slate-500">Loading deposits...</div>
+                  ) : deposits.length === 0 ? (
+                    <div className="text-center py-4 text-slate-500">No security deposits found.</div>
+                  ) : (
+                    deposits.map((rental) => (
+                      <div
+                        key={rental.id}
+                        className="flex items-center gap-4 p-4 rounded-lg bg-slate-50"
+                      >
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100">
+                          <Shield className="h-5 w-5 text-primary-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-slate-900">
+                            {rental.product?.name}
+                          </p>
+                          <p className="text-xs text-slate-400">
+                            Rental #{rental.id}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-slate-900">
+                            {formatCurrency(rental.securityDeposit)}
+                          </p>
+                          <Badge
+                            variant={rental.depositRefunded ? "success" : "warning"}
+                            className="text-xs mt-1"
+                          >
+                            {rental.depositRefunded ? "Refunded" : "Held"}
+                          </Badge>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-semibold text-slate-900">
-                          {rental.product?.name}
-                        </p>
-                        <p className="text-xs text-slate-400">
-                          Rental #{rental.id}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-bold text-slate-900">
-                          {formatCurrency(rental.securityDeposit)}
-                        </p>
-                        <Badge
-                          variant={rental.depositRefunded ? "success" : "warning"}
-                          className="text-xs mt-1"
-                        >
-                          {rental.depositRefunded ? "Refunded" : "Held"}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>

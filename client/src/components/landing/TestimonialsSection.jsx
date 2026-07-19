@@ -1,7 +1,35 @@
-import { testimonials } from "@/data/mockData";
 import { Star, Quote } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
+const testimonials = [
+  {
+    id: "t1",
+    name: "Sarah Jenkins",
+    role: "Event Planner",
+    company: "Elegant Events",
+    content:
+      "RentFlow has completely transformed how I source equipment for my events. The inventory is vast, the pricing is transparent, and the delivery is always on time. Highly recommended!",
+    rating: 5,
+  },
+  {
+    id: "t2",
+    name: "Michael Chen",
+    role: "Operations Manager",
+    company: "TechBuild Construction",
+    content:
+      "We rely on heavy machinery rentals, and finding reliable vendors was always a pain. With RentFlow, we manage all our vendor relationships and deposits in one place. It's a game changer.",
+    rating: 5,
+  },
+  {
+    id: "t3",
+    name: "Emily Rodriguez",
+    role: "Freelance Photographer",
+    company: "ER Studios",
+    content:
+      "I don't need to buy expensive camera lenses anymore. I just rent them through RentFlow for my weekend shoots. The interface is gorgeous and the process is seamless.",
+    rating: 4,
+  },
+];
 
 function TestimonialsSection() {
   return (
